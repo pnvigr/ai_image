@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LineChart, LogOut, History as HistoryIcon } from 'lucide-react';
+import { LineChart, LogOut, History as HistoryIcon, Coins, Shield } from 'lucide-react';
 import { getHealth, type HealthInfo } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 import { cn } from '../lib/cn';
@@ -56,17 +56,27 @@ export function Header() {
         {user ? (
           <div className="flex items-center gap-2">
             <Link
+              to="/billing"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/20"
+              title="Баланс токенов"
+            >
+              <Coins className="h-4 w-4" /> {user.tokensBalance}
+            </Link>
+            <Link
               to="/history"
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
               <HistoryIcon className="h-4 w-4" /> История
             </Link>
-            <span className="hidden max-w-[12rem] truncate text-sm text-slate-300 sm:inline">{user.email}</span>
             {user.role === 'admin' && (
-              <span className="rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-semibold text-indigo-300">
-                admin
-              </span>
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-indigo-300 transition hover:bg-slate-800"
+              >
+                <Shield className="h-4 w-4" /> Админка
+              </Link>
             )}
+            <span className="hidden max-w-[10rem] truncate text-sm text-slate-300 sm:inline">{user.email}</span>
             <button
               onClick={() => {
                 logout();

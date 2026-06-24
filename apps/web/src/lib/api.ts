@@ -2,10 +2,13 @@ import type {
   AnalysisHistoryItem,
   AnalysisResult,
   AuthResponse,
+  BillingInfo,
   LoginInput,
   PublicUser,
   RegisterInput,
+  TopupRequest,
   UpdateOutcomeInput,
+  UserRole,
 } from '@ai-image/shared';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
@@ -36,11 +39,13 @@ async function parseJson(res: Response): Promise<Record<string, unknown>> {
 export class ApiError extends Error {
   status: number;
   upgrade?: boolean;
-  constructor(message: string, status: number, upgrade?: boolean) {
+  topup?: boolean;
+  constructor(message: string, status: number, opts?: { upgrade?: boolean; topup?: boolean }) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
-    this.upgrade = upgrade;
+    this.upgrade = opts?.upgrade;
+    this.topup = opts?.topup;
   }
 }
 
@@ -63,7 +68,7 @@ export async function analyze(input: AnalyzeInput): Promise<AnalysisResult> {
     throw new ApiError(
       (data.message as string) || (data.error as string) || 'Запрос не выполнен',
       res.status,
-      data.upgrade as boolean | undefined,
+      { upgrade: data.upgrade as boolean | undefined, topup: data.topup as boolean | undefined },
     );
   }
   return data as unknown as AnalysisResult;
@@ -142,4 +147,77 @@ export async function getHealth(): Promise<HealthInfo | null> {
   } catch {
     return null;
   }
+}
+
+// ── Биллинг ──
+export async function getBillingInfo(): Promise<BillingInfo> {
+  const res = await fetch(`${API_BASE}/api/billing/info`);
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError('Не удалось загрузить тарифы', res.status);
+  return data as unknown as BillingInfo;
+}
+
+export async function requestTopup(packageId: string): Promise<{ request: TopupRequest; message: string }> {
+  const res = await fetch(`${API_BASE}/api/billing/topup`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ packageId }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Не удалось создать заявку', res.status);
+  return data as unknown as { request: TopupRequest; message: string };
+}
+
+export async function myTopups(): Promise<TopupRequest[]> {
+  const res = await fetch(`${API_BASE}/api/billing/topup/mine`, { headers: headers() });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError('Не удалось загрузить заявки', res.status);
+  return (data.items as TopupRequest[]) ?? [];
+}
+
+// ── Админка ──
+export async function adminListUsers(): Promise<PublicUser[]> {
+  const res = await fetch(`${API_BASE}/api/admin/users`, { headers: headers() });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError('Нет доступа', res.status);
+  return (data.users as PublicUser[]) ?? [];
+}
+
+export async function adminCreditUser(id: string, tokens: number): Promise<PublicUser> {
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}/credit`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ tokens }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  return data.user as PublicUser;
+}
+
+export async function adminSetRole(id: string, role: UserRole): Promise<PublicUser> {
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}/role`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ role }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  return data.user as PublicUser;
+}
+
+export async function adminListTopups(): Promise<TopupRequest[]> {
+  const res = await fetch(`${API_BASE}/api/admin/topups`, { headers: headers() });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError('Нет доступа', res.status);
+  return (data.items as TopupRequest[]) ?? [];
+}
+
+export async function adminFulfillTopup(id: string): Promise<TopupRequest> {
+  const res = await fetch(`${API_BASE}/api/admin/topups/${id}/fulfill`, {
+    method: 'POST',
+    headers: headers(),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  return data.item as TopupRequest;
 }
