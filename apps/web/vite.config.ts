@@ -14,4 +14,10 @@ export default defineConfig({
       },
     },
   },
+  // Прод-предпросмотр (вариант с двумя сервисами на Railway)
+  preview: {
+    host: true,
+    port: Number(process.env.PORT) || 4173,
+    allowedHosts: true,
+  },
 });

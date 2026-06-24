@@ -11,6 +11,8 @@ export const config = {
   port: num(process.env.PORT, 4000),
   mongoUri: process.env.MONGODB_URI ?? '',
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
+  // Прод: отдавать собранный фронт тем же сервисом (apps/web/dist) с SPA-фоллбэком
+  serveWeb: process.env.SERVE_WEB === 'true',
   jwt: {
     secret: process.env.JWT_SECRET ?? 'dev-insecure-secret-change-me',
     // срок жизни токена в секундах (по умолчанию 7 дней)

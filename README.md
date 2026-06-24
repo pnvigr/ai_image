@@ -62,6 +62,42 @@ pnpm dev
 
 Без ключа API возвращает mock-ответы — интерфейс полностью кликабелен для демо.
 
+## Деплой на Railway
+
+Проект — pnpm-монорепо. Проще всего поднять **одним сервисом**: API отдаёт и REST, и
+собранный фронт (SPA) с одного домена — без CORS и без отдельного URL для фронта.
+
+### Вариант 1 — один сервис (рекомендуется)
+
+1. Создай проект на Railway из этого репозитория (в корне есть `railway.json`).
+2. Добавь базу: **New → Database → MongoDB**.
+3. В сервисе приложения задай переменные окружения:
+   ```
+   SERVE_WEB=true
+   MONGODB_URI=${{MongoDB.MONGO_URL}}     # ссылка на переменную базы Railway
+   JWT_SECRET=<длинная случайная строка>
+   OPENROUTER_API_KEY=<ключ; пусто = demo/mock>
+   ADMIN_EMAIL=<твой email — станет админом при входе>
+   SUPPORT_CONTACT=<твой контакт для зачисления токенов>
+   # опционально: FREE_DAILY_LIMIT, PAID_ANALYSIS_COST, OPENROUTER_FREE_MODEL, OPENROUTER_TEXT_MODEL
+   ```
+   `VITE_API_URL` оставь пустым — фронт ходит на тот же домен (`/api`).
+4. Build Command: `pnpm build` · Start Command: `pnpm start` (уже в `railway.json`).
+5. Открой публичный домен сервиса — это приложение целиком.
+
+> `VITE_API_URL` инлайнится при сборке фронта. Для варианта 1 он пустой,
+> поэтому фронт использует относительный `/api` — что и нужно.
+
+### Вариант 2 — два сервиса (api и web раздельно)
+
+Два сервиса из одного репозитория (Root Directory у обоих — корень):
+
+- **API** — Build: `pnpm run build:api` · Start: `pnpm run start:api`
+  Переменные: `MONGODB_URI`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `ADMIN_EMAIL`,
+  `SUPPORT_CONTACT`, `CORS_ORIGIN=<публичный URL web-сервиса>`.
+- **WEB** — Build: `pnpm run build:web` · Start: `pnpm run start:web`
+  Переменная: `VITE_API_URL=<публичный URL api-сервиса>` (нужна на этапе сборки).
+
 ## Дорожная карта
 
 - [x] **Фаза 1** — каркас монорепо + ядро: загрузка скриншота → OpenRouter → карточка-прогноз
@@ -69,4 +105,4 @@ pnpm dev
 - [x] **Фаза 3** — история анализов + ручная отметка «зашёл / результат / payout»
 - [x] **Фаза 4** — токены + платная модель + админка
 - [x] **Фаза 5** — аналитика сделок и рекомендации инструментов
-- [ ] **Фаза 6** — деплой на Railway
+- [x] **Фаза 6** — деплой на Railway
