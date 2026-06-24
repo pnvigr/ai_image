@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config.js';
 import { analyzeRouter } from './routes/analyze.js';
+import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 
 export function createApp() {
@@ -16,6 +17,7 @@ export function createApp() {
 
   app.get('/', (_req, res) => res.json({ name: 'ai-image api', health: '/api/health' }));
   app.use('/api/health', healthRouter);
+  app.use('/api/auth', authRouter);
   app.use('/api/analyze', analyzeRouter);
 
   return app;

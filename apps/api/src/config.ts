@@ -11,6 +11,11 @@ export const config = {
   port: num(process.env.PORT, 4000),
   mongoUri: process.env.MONGODB_URI ?? '',
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
+  jwt: {
+    secret: process.env.JWT_SECRET ?? 'dev-insecure-secret-change-me',
+    // срок жизни токена в секундах (по умолчанию 7 дней)
+    expiresInSeconds: num(process.env.JWT_EXPIRES_IN_SECONDS, 60 * 60 * 24 * 7),
+  },
   openRouter: {
     apiKey: process.env.OPENROUTER_API_KEY ?? '',
     baseUrl: process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1',
@@ -25,4 +30,10 @@ export const config = {
 /** Есть ли реальный ключ OpenRouter. Если нет — работаем в demo/mock-режиме. */
 export function hasOpenRouter(): boolean {
   return Boolean(config.openRouter.apiKey);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.warn(
+    '[config] JWT_SECRET не задан — использую небезопасный дефолт. Задайте JWT_SECRET в .env для продакшена.',
+  );
 }
