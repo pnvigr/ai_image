@@ -13,6 +13,7 @@ export interface AnalysisRecord {
   signals: string[];
   model: string;
   mock: boolean;
+  tier: 'free' | 'paid';
   entered: boolean | null;
   result: TradeResult | null;
   payout: number | null;
@@ -36,6 +37,7 @@ function toRecord(doc: Record<string, unknown>): AnalysisRecord {
     signals: (doc.signals as string[]) ?? [],
     model: String(doc.model),
     mock: Boolean(doc.mock),
+    tier: (doc.tier as 'free' | 'paid') ?? 'free',
     entered: (doc.entered as boolean | null) ?? null,
     result: (doc.result as TradeResult | null) ?? null,
     payout: (doc.payout as number | null) ?? null,
@@ -48,6 +50,7 @@ export async function createAnalysis(input: {
   output: AnalysisModelOutput;
   model: string;
   mock: boolean;
+  tier: 'free' | 'paid';
   userId: string | null;
 }): Promise<AnalysisRecord> {
   const base = {
@@ -60,6 +63,7 @@ export async function createAnalysis(input: {
     signals: input.output.signals,
     model: input.model,
     mock: input.mock,
+    tier: input.tier,
     entered: null as boolean | null,
     result: null as TradeResult | null,
     payout: null as number | null,
@@ -122,4 +126,16 @@ export async function deleteAnalysis(id: string, userId: string): Promise<boolea
   if (!record || record.userId !== userId) return false;
   mem.delete(id);
   return true;
+}
+
+/** Сколько бесплатных анализов пользователь сделал сегодня (для дневного лимита). */
+export async function countUserFreeToday(userId: string): Promise<number> {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  if (isDbConnected()) {
+    return Analysis.countDocuments({ userId, tier: 'free', createdAt: { $gte: start } });
+  }
+  return [...mem.values()].filter(
+    (r) => r.userId === userId && r.tier === 'free' && new Date(r.createdAt) >= start,
+  ).length;
 }

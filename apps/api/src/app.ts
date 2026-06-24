@@ -3,7 +3,9 @@ import cors from 'cors';
 import { config } from './config.js';
 import { analyzeRouter } from './routes/analyze.js';
 import { analysesRouter } from './routes/analyses.js';
+import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
+import { billingRouter } from './routes/billing.js';
 import { healthRouter } from './routes/health.js';
 
 export function createApp() {
@@ -21,6 +23,8 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/analyze', analyzeRouter);
   app.use('/api/analyses', analysesRouter);
+  app.use('/api/billing', billingRouter);
+  app.use('/api/admin', adminRouter);
 
   return app;
 }

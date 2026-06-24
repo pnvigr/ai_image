@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { RegisterSchema, LoginSchema, type AuthResponse } from '@ai-image/shared';
-import { createUser, findUserByEmail } from '../store/users.js';
+import { config } from '../config.js';
+import { createUser, findUserByEmail, setUserRole } from '../store/users.js';
 import { hashPassword, verifyPassword, signToken, toPublicUser } from '../lib/auth.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -30,9 +31,14 @@ authRouter.post('/login', async (req, res) => {
   }
   const { email, password } = parse.data;
 
-  const user = await findUserByEmail(email);
+  let user = await findUserByEmail(email);
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return res.status(401).json({ error: 'invalid_credentials', message: 'Неверный email или пароль.' });
+  }
+
+  // Бутстрап администратора: email из ADMIN_EMAIL автоматически получает роль admin.
+  if (config.admin.email && user.email === config.admin.email && user.role !== 'admin') {
+    user = (await setUserRole(user.id, 'admin')) ?? user;
   }
 
   const body: AuthResponse = { token: signToken(user), user: toPublicUser(user) };

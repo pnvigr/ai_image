@@ -15,6 +15,7 @@ const analysisSchema = new Schema(
     signals: { type: [String], default: [] },
     model: { type: String, required: true },
     mock: { type: Boolean, default: false },
+    tier: { type: String, enum: ['free', 'paid'], default: 'free' },
 
     // Заполняется пользователем вручную
     entered: { type: Boolean, default: null },

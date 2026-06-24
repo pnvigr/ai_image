@@ -1,4 +1,5 @@
 import type { UserRole } from '@ai-image/shared';
+import { config } from '../config.js';
 import { isDbConnected } from '../db.js';
 import { UserModel } from '../models/User.js';
 
@@ -57,7 +58,8 @@ export async function createUser(input: {
   role?: UserRole;
 }): Promise<UserRecord> {
   const email = input.email.toLowerCase();
-  const role = input.role ?? 'user';
+  const role =
+    input.role ?? (config.admin.email && email === config.admin.email ? 'admin' : 'user');
   if (isDbConnected()) {
     const doc = await UserModel.create({ email, passwordHash: input.passwordHash, role });
     return toRecord(doc.toObject() as Record<string, unknown>);
@@ -72,4 +74,45 @@ export async function createUser(input: {
   };
   memByEmail.set(email, record);
   return record;
+}
+
+/** Начислить (delta>0) или списать (delta<0) токены. Баланс не уходит ниже 0. */
+export async function adjustTokens(userId: string, delta: number): Promise<UserRecord | null> {
+  if (isDbConnected()) {
+    const doc = await UserModel.findByIdAndUpdate(userId, { $inc: { tokensBalance: delta } }, { new: true })
+      .lean()
+      .catch(() => null);
+    return doc ? toRecord(doc as Record<string, unknown>) : null;
+  }
+  for (const user of memByEmail.values()) {
+    if (user.id === userId) {
+      user.tokensBalance = Math.max(0, user.tokensBalance + delta);
+      return user;
+    }
+  }
+  return null;
+}
+
+export async function setUserRole(userId: string, role: UserRole): Promise<UserRecord | null> {
+  if (isDbConnected()) {
+    const doc = await UserModel.findByIdAndUpdate(userId, { $set: { role } }, { new: true })
+      .lean()
+      .catch(() => null);
+    return doc ? toRecord(doc as Record<string, unknown>) : null;
+  }
+  for (const user of memByEmail.values()) {
+    if (user.id === userId) {
+      user.role = role;
+      return user;
+    }
+  }
+  return null;
+}
+
+export async function listUsers(): Promise<UserRecord[]> {
+  if (isDbConnected()) {
+    const docs = await UserModel.find().sort({ createdAt: -1 }).limit(500).lean();
+    return docs.map((d) => toRecord(d as Record<string, unknown>));
+  }
+  return [...memByEmail.values()];
 }

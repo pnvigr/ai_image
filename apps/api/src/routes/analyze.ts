@@ -9,7 +9,8 @@ import {
 import { config, hasOpenRouter } from '../config.js';
 import { analyzeWithOpenRouter, mockAnalysis, OpenRouterError } from '../lib/openrouter.js';
 import { optionalAuth } from '../middleware/auth.js';
-import { createAnalysis } from '../store/analyses.js';
+import { createAnalysis, countUserFreeToday } from '../store/analyses.js';
+import { adjustTokens } from '../store/users.js';
 
 export const analyzeRouter = Router();
 
@@ -19,10 +20,37 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
     return res.status(400).json({ error: 'invalid_request', details: parse.error.flatten() });
   }
   const { imageDataUrl, pairHint, timeframeHint, tier } = parse.data;
+  const user = req.user ?? null;
 
   const usingMock = !hasOpenRouter();
   const model = tier === 'paid' ? config.openRouter.paidModel : config.openRouter.freeModel;
   const usedModelLabel = usingMock ? 'mock' : model;
+
+  // Платная модель: нужен аккаунт и достаточный баланс токенов.
+  if (tier === 'paid') {
+    if (!user) {
+      return res
+        .status(401)
+        .json({ error: 'auth_required', message: 'Войдите, чтобы использовать платную модель.' });
+    }
+    if (user.tokensBalance < config.billing.paidAnalysisCost) {
+      return res.status(402).json({
+        error: 'insufficient_tokens',
+        message: 'Недостаточно токенов. Пополните баланс, чтобы пользоваться платной моделью.',
+        topup: true,
+      });
+    }
+  } else if (user) {
+    // Бесплатный тариф: дневной лимит на пользователя (имитация лимитов free-тира).
+    const usedToday = await countUserFreeToday(user.id);
+    if (usedToday >= config.billing.freeDailyLimit) {
+      return res.status(429).json({
+        error: 'free_limit',
+        message: 'Дневной лимит бесплатных анализов исчерпан. Переключитесь на платную модель.',
+        upgrade: true,
+      });
+    }
+  }
 
   try {
     const output = usingMock
@@ -34,8 +62,14 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
       output,
       model: usedModelLabel,
       mock: usingMock,
-      userId: req.user?.id ?? null,
+      tier,
+      userId: user?.id ?? null,
     });
+
+    // Списываем токены за платный анализ только при успехе.
+    if (tier === 'paid' && user) {
+      await adjustTokens(user.id, -config.billing.paidAnalysisCost);
+    }
 
     const result: AnalysisResult = AnalysisResultSchema.parse({
       ...output,

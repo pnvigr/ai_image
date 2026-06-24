@@ -25,6 +25,17 @@ export const config = {
     appUrl: process.env.OPENROUTER_APP_URL ?? 'http://localhost:5173',
     appName: process.env.OPENROUTER_APP_NAME ?? 'AI Chart Analysis (diploma)',
   },
+  admin: {
+    // email, который автоматически получает роль admin при регистрации/входе
+    email: (process.env.ADMIN_EMAIL ?? '').toLowerCase(),
+  },
+  billing: {
+    supportContact: process.env.SUPPORT_CONTACT ?? 'Telegram: @your_support_handle',
+    // дневной лимит бесплатных анализов на пользователя (имитация лимитов free-тира)
+    freeDailyLimit: num(process.env.FREE_DAILY_LIMIT, 20),
+    // стоимость одного анализа на платной модели (в токенах)
+    paidAnalysisCost: num(process.env.PAID_ANALYSIS_COST, 1),
+  },
 };
 
 /** Есть ли реальный ключ OpenRouter. Если нет — работаем в demo/mock-режиме. */
