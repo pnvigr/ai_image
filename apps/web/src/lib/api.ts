@@ -1,9 +1,11 @@
 import type {
+  AnalysisHistoryItem,
   AnalysisResult,
   AuthResponse,
   LoginInput,
   PublicUser,
   RegisterInput,
+  UpdateOutcomeInput,
 } from '@ai-image/shared';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
@@ -95,6 +97,33 @@ export async function fetchMe(): Promise<PublicUser | null> {
   if (!res.ok) return null;
   const data = await parseJson(res);
   return (data.user as PublicUser | undefined) ?? null;
+}
+
+// ── История анализов ──
+export async function listAnalyses(): Promise<AnalysisHistoryItem[]> {
+  const res = await fetch(`${API_BASE}/api/analyses`, { headers: headers() });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка загрузки истории', res.status);
+  return (data.items as AnalysisHistoryItem[]) ?? [];
+}
+
+export async function updateOutcome(id: string, patch: UpdateOutcomeInput): Promise<AnalysisHistoryItem> {
+  const res = await fetch(`${API_BASE}/api/analyses/${id}`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify(patch),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Не удалось сохранить', res.status);
+  return data.item as AnalysisHistoryItem;
+}
+
+export async function deleteAnalysis(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/analyses/${id}`, { method: 'DELETE', headers: headers() });
+  if (!res.ok && res.status !== 204) {
+    const data = await parseJson(res);
+    throw new ApiError((data.message as string) || 'Не удалось удалить', res.status);
+  }
 }
 
 // ── Health ──

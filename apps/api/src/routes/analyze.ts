@@ -8,12 +8,12 @@ import {
 } from '@ai-image/shared';
 import { config, hasOpenRouter } from '../config.js';
 import { analyzeWithOpenRouter, mockAnalysis, OpenRouterError } from '../lib/openrouter.js';
-import { isDbConnected } from '../db.js';
-import { Analysis } from '../models/Analysis.js';
+import { optionalAuth } from '../middleware/auth.js';
+import { createAnalysis } from '../store/analyses.js';
 
 export const analyzeRouter = Router();
 
-analyzeRouter.post('/', async (req, res) => {
+analyzeRouter.post('/', optionalAuth, async (req, res) => {
   const parse = AnalyzeRequestSchema.safeParse(req.body);
   if (!parse.success) {
     return res.status(400).json({ error: 'invalid_request', details: parse.error.flatten() });
@@ -29,18 +29,18 @@ analyzeRouter.post('/', async (req, res) => {
       ? mockAnalysis({ pairHint, timeframeHint })
       : await analyzeWithOpenRouter({ imageDataUrl, pairHint, timeframeHint, model });
 
-    let id: string | undefined;
-    let createdAt: string | undefined;
-    if (isDbConnected()) {
-      const doc = await Analysis.create({ ...output, model: usedModelLabel, mock: usingMock });
-      id = String(doc._id);
-      createdAt = (doc as { createdAt?: Date }).createdAt?.toISOString();
-    }
+    // Сохраняем всегда (Mongo или in-memory). Если пользователь залогинен — привязываем к нему.
+    const saved = await createAnalysis({
+      output,
+      model: usedModelLabel,
+      mock: usingMock,
+      userId: req.user?.id ?? null,
+    });
 
     const result: AnalysisResult = AnalysisResultSchema.parse({
       ...output,
-      id,
-      createdAt,
+      id: saved.id,
+      createdAt: saved.createdAt,
       model: usedModelLabel,
       mock: usingMock,
       disclaimer: ANALYSIS_DISCLAIMER,
@@ -48,7 +48,6 @@ analyzeRouter.post('/', async (req, res) => {
     return res.json(result);
   } catch (err) {
     if (err instanceof OpenRouterError) {
-      // Лимит free-тира / rate limit → подсказка перейти на платную модель (полный флоу в Фазе 4)
       if (err.status === 429) {
         return res.status(429).json({
           error: 'rate_limited',

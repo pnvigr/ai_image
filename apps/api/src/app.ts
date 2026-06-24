@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config.js';
 import { analyzeRouter } from './routes/analyze.js';
+import { analysesRouter } from './routes/analyses.js';
 import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 
@@ -19,6 +20,7 @@ export function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/analyze', analyzeRouter);
+  app.use('/api/analyses', analysesRouter);
 
   return app;
 }

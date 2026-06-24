@@ -21,6 +21,21 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 }
 
+/** Мягкая авторизация: если токен есть и валиден — кладёт user в req, иначе пропускает. */
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const payload = verifyToken(header.slice(7));
+      const user = await findUserById(payload.sub);
+      if (user) req.user = toPublicUser(user);
+    } catch {
+      // невалидный токен игнорируем — запрос остаётся анонимным
+    }
+  }
+  next();
+}
+
 /** Требует роль admin (используется в Фазе 4). Применять после requireAuth. */
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.user?.role !== 'admin') {
