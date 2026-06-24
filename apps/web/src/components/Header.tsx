@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LineChart, LogOut, History as HistoryIcon, Coins, Shield } from 'lucide-react';
+import { LineChart, LogOut, History as HistoryIcon, Coins, Shield, BarChart3 } from 'lucide-react';
 import { getHealth, type HealthInfo } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 import { cn } from '../lib/cn';
@@ -67,6 +67,12 @@ export function Header() {
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
               <HistoryIcon className="h-4 w-4" /> История
+            </Link>
+            <Link
+              to="/analytics"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+            >
+              <BarChart3 className="h-4 w-4" /> Аналитика
             </Link>
             {user.role === 'admin' && (
               <Link

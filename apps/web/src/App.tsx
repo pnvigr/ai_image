@@ -6,6 +6,7 @@ import { AuthPage } from './pages/AuthPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { BillingPage } from './pages/BillingPage';
 import { AdminPage } from './pages/AdminPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/login" element={<AuthPage mode="login" />} />

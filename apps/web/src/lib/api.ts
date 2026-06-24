@@ -1,6 +1,7 @@
 import type {
   AnalysisHistoryItem,
   AnalysisResult,
+  AnalyticsResult,
   AuthResponse,
   BillingInfo,
   LoginInput,
@@ -220,4 +221,12 @@ export async function adminFulfillTopup(id: string): Promise<TopupRequest> {
   const data = await parseJson(res);
   if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
   return data.item as TopupRequest;
+}
+
+// ── Аналитика ──
+export async function getAnalyticsInsight(): Promise<AnalyticsResult> {
+  const res = await fetch(`${API_BASE}/api/analytics/insight`, { method: 'POST', headers: headers() });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Не удалось получить аналитику', res.status);
+  return data as unknown as AnalyticsResult;
 }

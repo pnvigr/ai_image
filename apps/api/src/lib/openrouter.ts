@@ -1,4 +1,12 @@
-import { AnalysisModelOutputSchema, type AnalysisModelOutput } from '@ai-image/shared';
+import {
+  AnalysisModelOutputSchema,
+  AnalyticsInsightSchema,
+  INSTRUMENT_UNIVERSE,
+  type AnalysisModelOutput,
+  type AnalyticsInsight,
+  type HistoryStats,
+  type InstrumentStat,
+} from '@ai-image/shared';
 import { config } from '../config.js';
 
 const SYSTEM_PROMPT = `Ты — ассистент для ОБРАЗОВАТЕЛЬНОГО анализа скриншотов трейдинговых графиков.
@@ -124,4 +132,88 @@ export function mockAnalysis(params: { pairHint?: string; timeframeHint?: string
       'объём умеренный. В реальном режиме здесь будет разбор от vision-модели.',
     signals: ['Краткосрочный тренд', 'Рядом уровень поддержки/сопротивления', 'Объём умеренный'],
   };
+}
+
+/** Текстовый chat-запрос к OpenRouter, возвращает распарсенный JSON. */
+async function chatJson(system: string, userText: string, model: string): Promise<unknown> {
+  const res = await fetch(`${config.openRouter.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.openRouter.apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': config.openRouter.appUrl,
+      'X-Title': config.openRouter.appName,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.3,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userText },
+      ],
+    }),
+  });
+  if (!res.ok) throw new OpenRouterError(res.status, await res.text());
+  const data = (await res.json()) as ChatCompletionResponse;
+  const content = data.choices?.[0]?.message?.content ?? '';
+  if (!content) throw new OpenRouterError(502, JSON.stringify(data).slice(0, 500));
+  return extractJson(content);
+}
+
+/** Просит модель разобрать статистику пользователя и порекомендовать инструменты из списка. */
+export async function analyzeTrades(params: {
+  stats: HistoryStats;
+  byInstrument: InstrumentStat[];
+  model: string;
+}): Promise<AnalyticsInsight> {
+  const used = params.byInstrument.map((s) => s.pair);
+  const candidates = INSTRUMENT_UNIVERSE.filter((p) => !used.includes(p));
+  const table =
+    params.byInstrument
+      .map(
+        (s) =>
+          `${s.pair}: входов ${s.entered}, W/L ${s.wins}/${s.losses}, винрейт ${s.winrate ?? '—'}%, payout ${s.payout.toFixed(2)}`,
+      )
+      .join('\n') || '(пока нет сделок)';
+
+  const system =
+    'Ты — образовательный ассистент по дисциплине трейдинга. Кратко разбери статистику пользователя ' +
+    'и порекомендуй инструменты ТОЛЬКО из списка кандидатов. Подчёркивай, что винрейт не гарантирован, ' +
+    'а ИИ не предсказывает рынок. Верни строго JSON: ' +
+    '{"insight": string (3-5 предложений по-русски), "recommendations": string[] (2-4 тикера из списка кандидатов)}.';
+  const user =
+    `Статистика по инструментам:\n${table}\n\n` +
+    `Общий винрейт: ${params.stats.winrate ?? '—'}% (входов ${params.stats.entered}, всего анализов ${params.stats.total}).\n\n` +
+    `Кандидаты для рекомендаций: ${candidates.join(', ') || '(нет)'}.`;
+
+  const parsed = await chatJson(system, user, params.model);
+  return AnalyticsInsightSchema.parse(parsed);
+}
+
+/** Mock-разбор (без ключа OpenRouter) — выводится из статистики, усиливает тезис диплома. */
+export function mockTradeInsight(params: {
+  stats: HistoryStats;
+  byInstrument: InstrumentStat[];
+}): AnalyticsInsight {
+  const used = params.byInstrument.map((s) => s.pair);
+  const candidates = INSTRUMENT_UNIVERSE.filter((p) => !used.includes(p)).slice(0, 3);
+  const decided = params.byInstrument.filter((s) => s.winrate !== null);
+  const best = [...decided].sort((a, b) => (b.winrate ?? 0) - (a.winrate ?? 0))[0];
+  const worst = [...decided].sort((a, b) => (a.winrate ?? 0) - (b.winrate ?? 0))[0];
+
+  const parts: string[] = [];
+  if (params.stats.entered === 0) {
+    parts.push(
+      'Пока недостаточно отмеченных сделок для разбора. Отмечай исходы (зашёл / win / loss / payout) — и здесь появится статистика.',
+    );
+  } else {
+    parts.push(`Всего входов: ${params.stats.entered}, общий винрейт около ${params.stats.winrate ?? '—'}%.`);
+    if (best && worst && best.pair !== worst.pair) {
+      parts.push(`Относительно лучше шло по ${best.pair} (${best.winrate}%), хуже — по ${worst.pair} (${worst.winrate}%).`);
+    }
+    parts.push(
+      'Важно: на малой выборке разница между инструментами — в основном шум. Устойчивого предсказательного преимущества у ИИ-разметки нет — это ключевой вывод работы.',
+    );
+  }
+  return { insight: parts.join(' '), recommendations: candidates };
 }

@@ -22,6 +22,7 @@ export const config = {
     freeModel:
       process.env.OPENROUTER_FREE_MODEL ?? 'meta-llama/llama-3.2-11b-vision-instruct:free',
     paidModel: process.env.OPENROUTER_PAID_MODEL ?? 'openai/gpt-4o-mini',
+    textModel: process.env.OPENROUTER_TEXT_MODEL ?? 'meta-llama/llama-3.1-8b-instruct:free',
     appUrl: process.env.OPENROUTER_APP_URL ?? 'http://localhost:5173',
     appName: process.env.OPENROUTER_APP_NAME ?? 'AI Chart Analysis (diploma)',
   },
