@@ -1,0 +1,26 @@
+{
+  "name": "ai-image",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Образовательный диплом: как ИИ анализирует скриншоты трейдинговых графиков (NodeJS + MongoDB, монорепо)",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:api": "pnpm --filter @ai-image/shared build && pnpm --filter @ai-image/api build",
+    "build:web": "pnpm --filter @ai-image/shared build && pnpm --filter @ai-image/web build",
+    "start:web": "pnpm --filter @ai-image/web preview",
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm --filter @ai-image/shared build && concurrently -n shared,api,web -c blue,green,magenta \"pnpm --filter @ai-image/shared dev\" \"pnpm --filter @ai-image/api dev\" \"pnpm --filter @ai-image/web dev\"",
+    "dev:api": "pnpm --filter @ai-image/api dev",
+    "dev:web": "pnpm --filter @ai-image/web dev",
+    "start": "pnpm --filter @ai-image/api start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3"
+  }
+}
