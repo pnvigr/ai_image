@@ -217,3 +217,31 @@ export function mockTradeInsight(params: {
   }
   return { insight: parts.join(' '), recommendations: candidates };
 }
+
+export class AllModelsFailedError extends Error {
+  constructor(public attempts: number) {
+    super(`Все ${attempts} модель(и) не ответили`);
+    this.name = 'AllModelsFailedError';
+  }
+}
+
+/** Бесплатный режим: перебирает модели по порядку и возвращает первый успешный ответ. */
+export async function analyzeWithFallback(
+  base: { imageDataUrl: string; pairHint?: string; timeframeHint?: string },
+  models: string[],
+): Promise<{ output: AnalysisModelOutput; model: string }> {
+  let attempts = 0;
+  for (const model of models) {
+    attempts++;
+    try {
+      const output = await analyzeWithOpenRouter({ ...base, model });
+      return { output, model };
+    } catch (err) {
+      console.warn(
+        `[openrouter] модель ${model} не сработала, пробую следующую:`,
+        (err as Error).message,
+      );
+    }
+  }
+  throw new AllModelsFailedError(attempts);
+}

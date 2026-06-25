@@ -11,6 +11,7 @@ import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
 import { billingRouter } from './routes/billing.js';
 import { healthRouter } from './routes/health.js';
+import { modelsRouter } from './routes/models.js';
 
 export function createApp() {
   const app = express();
@@ -24,6 +25,7 @@ export function createApp() {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/models', modelsRouter);
   app.use('/api/analyze', analyzeRouter);
   app.use('/api/analyses', analysesRouter);
   app.use('/api/analytics', analyticsRouter);

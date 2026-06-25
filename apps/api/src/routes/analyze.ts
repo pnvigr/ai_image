@@ -4,36 +4,52 @@ import {
   AnalyzeRequestSchema,
   AnalysisResultSchema,
   ANALYSIS_DISCLAIMER,
+  type AnalysisModelOutput,
   type AnalysisResult,
+  type AiModelInfo,
 } from '@ai-image/shared';
 import { config, hasOpenRouter } from '../config.js';
-import { analyzeWithOpenRouter, mockAnalysis, OpenRouterError } from '../lib/openrouter.js';
+import { analyzeWithOpenRouter, analyzeWithFallback, mockAnalysis, AllModelsFailedError } from '../lib/openrouter.js';
 import { optionalAuth } from '../middleware/auth.js';
 import { createAnalysis, countUserFreeToday } from '../store/analyses.js';
 import { adjustTokens } from '../store/users.js';
+import { listEnabledByTier } from '../store/models.js';
 
 export const analyzeRouter = Router();
+
+function toRef(m: AiModelInfo) {
+  return { modelId: m.modelId, label: m.label, costTokens: m.costTokens };
+}
 
 analyzeRouter.post('/', optionalAuth, async (req, res) => {
   const parse = AnalyzeRequestSchema.safeParse(req.body);
   if (!parse.success) {
     return res.status(400).json({ error: 'invalid_request', details: parse.error.flatten() });
   }
-  const { imageDataUrl, pairHint, timeframeHint, tier } = parse.data;
+  const { imageDataUrl, pairHint, timeframeHint, tier, modelId } = parse.data;
   const user = req.user ?? null;
-
   const usingMock = !hasOpenRouter();
-  const model = tier === 'paid' ? config.openRouter.paidModel : config.openRouter.freeModel;
-  const usedModelLabel = usingMock ? 'mock' : model;
 
-  // Платная модель: нужен аккаунт и достаточный баланс токенов.
+  // ── Проверки и выбор модели по тарифу ──
+  let chosenPaid: AiModelInfo | null = null;
+  let cost = 0;
+
   if (tier === 'paid') {
     if (!user) {
       return res
         .status(401)
         .json({ error: 'auth_required', message: 'Войдите, чтобы использовать платную модель.' });
     }
-    if (user.tokensBalance < config.billing.paidAnalysisCost) {
+    const paidList = await listEnabledByTier('paid');
+    if (paidList.length === 0) {
+      return res
+        .status(503)
+        .json({ error: 'no_paid_models', message: 'Платные модели не настроены. Обратитесь к администратору.' });
+    }
+    // Берём выбранную модель; если не задана/не найдена — первую доступную.
+    chosenPaid = (modelId && paidList.find((m) => m.modelId === modelId)) || paidList[0];
+    cost = chosenPaid.costTokens || config.billing.paidAnalysisCost;
+    if (user.tokensBalance < cost) {
       return res.status(402).json({
         error: 'insufficient_tokens',
         message: 'Недостаточно токенов. Пополните баланс, чтобы пользоваться платной моделью.',
@@ -41,7 +57,7 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
       });
     }
   } else if (user) {
-    // Бесплатный тариф: дневной лимит на пользователя (имитация лимитов free-тира).
+    // Бесплатный тариф: дневной лимит на пользователя.
     const usedToday = await countUserFreeToday(user.id);
     if (usedToday >= config.billing.freeDailyLimit) {
       return res.status(429).json({
@@ -53,11 +69,47 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
   }
 
   try {
-    const output = usingMock
-      ? mockAnalysis({ pairHint, timeframeHint })
-      : await analyzeWithOpenRouter({ imageDataUrl, pairHint, timeframeHint, model });
+    let output: AnalysisModelOutput;
+    let usedModelLabel: string;
 
-    // Сохраняем всегда (Mongo или in-memory). Если пользователь залогинен — привязываем к нему.
+    if (usingMock) {
+      // Демо-режим без ключа: один mock-ответ (направление случайно — часть тезиса).
+      output = mockAnalysis({ pairHint, timeframeHint });
+      usedModelLabel = tier === 'paid' && chosenPaid ? chosenPaid.modelId : 'mock';
+    } else if (tier === 'paid' && chosenPaid) {
+      // Платная: одна выбранная модель; при ошибке предлагаем другие платные.
+      try {
+        output = await analyzeWithOpenRouter({ imageDataUrl, pairHint, timeframeHint, model: chosenPaid.modelId });
+        usedModelLabel = chosenPaid.modelId;
+      } catch {
+        const others = (await listEnabledByTier('paid')).filter((m) => m.modelId !== chosenPaid!.modelId);
+        return res.status(502).json({
+          error: 'paid_model_failed',
+          message: `Модель «${chosenPaid.label}» сейчас недоступна. Попробуйте другую платную модель.`,
+          alternatives: others.map(toRef),
+        });
+      }
+    } else {
+      // Бесплатная: перебираем модели по порядку до первого успеха.
+      const freeModels = (await listEnabledByTier('free')).map((m) => m.modelId);
+      const candidates = freeModels.length ? freeModels : [config.openRouter.freeModel];
+      try {
+        const r = await analyzeWithFallback({ imageDataUrl, pairHint, timeframeHint }, candidates);
+        output = r.output;
+        usedModelLabel = r.model;
+      } catch (err) {
+        if (err instanceof AllModelsFailedError) {
+          return res.status(502).json({
+            error: 'all_free_failed',
+            message: 'Все бесплатные модели сейчас недоступны. Попробуйте платную модель.',
+            upgrade: true,
+          });
+        }
+        throw err;
+      }
+    }
+
+    // Сохраняем (Mongo или in-memory). Если пользователь залогинен — привязываем к нему.
     const saved = await createAnalysis({
       output,
       model: usedModelLabel,
@@ -67,8 +119,8 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
     });
 
     // Списываем токены за платный анализ только при успехе.
-    if (tier === 'paid' && user) {
-      await adjustTokens(user.id, -config.billing.paidAnalysisCost);
+    if (tier === 'paid' && user && chosenPaid) {
+      await adjustTokens(user.id, -cost);
     }
 
     const result: AnalysisResult = AnalysisResultSchema.parse({
@@ -81,21 +133,6 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
     });
     return res.json(result);
   } catch (err) {
-    if (err instanceof OpenRouterError) {
-      if (err.status === 429) {
-        return res.status(429).json({
-          error: 'rate_limited',
-          message: 'Лимит бесплатной модели исчерпан. Попробуйте позже или переключитесь на платную модель.',
-          upgrade: true,
-        });
-      }
-      return res.status(502).json({
-        error: 'provider_error',
-        status: err.status,
-        message: 'Ошибка провайдера ИИ. Попробуйте ещё раз.',
-        body: err.body.slice(0, 500),
-      });
-    }
     if (err instanceof ZodError) {
       return res.status(422).json({
         error: 'bad_model_output',

@@ -7,6 +7,16 @@ function num(value: string | undefined, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/** Парсит список из env (через запятую) в массив строк. */
+function list(value: string | undefined): string[] {
+  return value
+    ? value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+}
+
 export const config = {
   port: num(process.env.PORT, 4000),
   mongoUri: process.env.MONGODB_URI ?? '',
@@ -25,6 +35,9 @@ export const config = {
       process.env.OPENROUTER_FREE_MODEL ?? 'meta-llama/llama-3.2-11b-vision-instruct:free',
     paidModel: process.env.OPENROUTER_PAID_MODEL ?? 'openai/gpt-4o-mini',
     textModel: process.env.OPENROUTER_TEXT_MODEL ?? 'meta-llama/llama-3.1-8b-instruct:free',
+    // Списки для сидирования БД при первом запуске (через запятую)
+    freeModels: list(process.env.OPENROUTER_FREE_MODELS),
+    paidModels: list(process.env.OPENROUTER_PAID_MODELS),
     appUrl: process.env.OPENROUTER_APP_URL ?? 'http://localhost:5173',
     appName: process.env.OPENROUTER_APP_NAME ?? 'AI Chart Analysis (diploma)',
   },

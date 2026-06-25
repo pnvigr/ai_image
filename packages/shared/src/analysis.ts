@@ -45,6 +45,8 @@ export const AnalyzeRequestSchema = z.object({
   pairHint: z.string().max(40).optional(),
   timeframeHint: z.string().max(40).optional(),
   tier: z.enum(['free', 'paid']).default('free'),
+  // Для платной модели — выбранный пользователем OpenRouter model id (опционально).
+  modelId: z.string().max(120).optional(),
 });
 export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
 
