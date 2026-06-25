@@ -73,6 +73,9 @@ export function ForecastCard({ result }: { result: AnalysisResult }) {
         <Row icon="⏳" label="Экспирация">
           {result.timeframe}
         </Row>
+        <Row icon="🤖" label="Модель">
+          {result.mock ? 'демо (mock)' : result.model}
+        </Row>
 
         <div>
           <div className="mb-1 flex items-center justify-between text-xs text-slate-400">

@@ -20,6 +20,7 @@ export interface PublicUser {
   email: string;
   role: UserRole;
   tokensBalance: number;
+  preferredModelId?: string | null;
   createdAt?: string;
 }
 
@@ -27,3 +28,9 @@ export interface AuthResponse {
   token: string;
   user: PublicUser;
 }
+
+/** Обновление настроек пользователя (например, выбранная платная модель). */
+export const UpdatePreferencesSchema = z.object({
+  preferredModelId: z.string().max(120).nullable(),
+});
+export type UpdatePreferencesInput = z.infer<typeof UpdatePreferencesSchema>;

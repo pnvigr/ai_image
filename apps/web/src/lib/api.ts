@@ -120,6 +120,18 @@ export async function fetchMe(): Promise<PublicUser | null> {
   return (data.user as PublicUser | undefined) ?? null;
 }
 
+/** Запомнить выбранную платную модель в профиле (на сервере). */
+export async function setPreferredModel(modelId: string | null): Promise<PublicUser> {
+  const res = await fetch(`${API_BASE}/api/auth/me`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify({ preferredModelId: modelId }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  return data.user as PublicUser;
+}
+
 // ── История анализов ──
 export async function listAnalyses(): Promise<AnalysisHistoryItem[]> {
   const res = await fetch(`${API_BASE}/api/analyses`, { headers: headers() });

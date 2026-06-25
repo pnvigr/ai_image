@@ -4,7 +4,7 @@ import { Sparkles, AlertTriangle, Coins, RefreshCw } from 'lucide-react';
 import type { AiModelInfo, AnalysisResult, ModelRef } from '@ai-image/shared';
 import { UploadCard } from '../components/UploadCard';
 import { ForecastCard } from '../components/ForecastCard';
-import { analyze, getModels, ApiError, type AnalyzeInput } from '../lib/api';
+import { analyze, getModels, setPreferredModel, ApiError, type AnalyzeInput } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 
 interface ErrState {
@@ -15,7 +15,7 @@ interface ErrState {
 }
 
 export function HomePage() {
-  const { refresh } = useAuth();
+  const { refresh, user } = useAuth();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ErrState | null>(null);
@@ -26,23 +26,32 @@ export function HomePage() {
   const [tier, setTier] = useState<'free' | 'paid'>('free');
   const [paidModelId, setPaidModelId] = useState<string | null>(() => localStorage.getItem('paidModel'));
 
-  // Загружаем доступные модели и восстанавливаем выбор платной.
+  // Загружаем доступные модели.
   useEffect(() => {
     getModels()
       .then((m) => {
         setPaidModels(m.paid);
         setFreeCount(m.free.length);
-        setPaidModelId((prev) => {
-          if (prev && m.paid.some((x) => x.modelId === prev)) return prev;
-          return m.paid[0]?.modelId ?? null;
-        });
       })
       .catch(() => undefined);
   }, []);
 
+  // Выбор платной модели: приоритет — профиль (сервер), затем localStorage, затем первая.
+  useEffect(() => {
+    if (paidModels.length === 0) return;
+    setPaidModelId((prev) => {
+      if (prev && paidModels.some((m) => m.modelId === prev)) return prev;
+      const want = user?.preferredModelId || localStorage.getItem('paidModel');
+      if (want && paidModels.some((m) => m.modelId === want)) return want;
+      return paidModels[0]?.modelId ?? null;
+    });
+  }, [user, paidModels]);
+
   function choosePaidModel(id: string) {
     setPaidModelId(id);
     localStorage.setItem('paidModel', id);
+    // Если залогинен — запоминаем выбор на сервере (в профиле).
+    if (user) void setPreferredModel(id).then(() => refresh()).catch(() => undefined);
   }
 
   function changeTier(t: 'free' | 'paid') {

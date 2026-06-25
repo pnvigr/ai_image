@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { RegisterSchema, LoginSchema, type AuthResponse } from '@ai-image/shared';
+import { RegisterSchema, LoginSchema, UpdatePreferencesSchema, type AuthResponse } from '@ai-image/shared';
 import { config } from '../config.js';
-import { createUser, findUserByEmail, setUserRole } from '../store/users.js';
+import { createUser, findUserByEmail, setPreferredModel, setUserRole } from '../store/users.js';
 import { hashPassword, verifyPassword, signToken, toPublicUser } from '../lib/auth.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -47,4 +47,15 @@ authRouter.post('/login', async (req, res) => {
 
 authRouter.get('/me', requireAuth, (req, res) => {
   return res.json({ user: req.user });
+});
+
+// Обновление настроек (выбранная платная модель запоминается на сервере).
+authRouter.patch('/me', requireAuth, async (req, res) => {
+  const parse = UpdatePreferencesSchema.safeParse(req.body);
+  if (!parse.success) {
+    return res.status(400).json({ error: 'invalid_request', details: parse.error.flatten() });
+  }
+  const updated = await setPreferredModel(req.user!.id, parse.data.preferredModelId);
+  if (!updated) return res.status(404).json({ error: 'not_found', message: 'Пользователь не найден.' });
+  return res.json({ user: toPublicUser(updated) });
 });
