@@ -1,16 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ImageUp, X, Loader2, Sparkles, ClipboardPaste } from 'lucide-react';
+import { ImageUp, X, Loader2, Sparkles, ClipboardPaste, Gift, Coins } from 'lucide-react';
+import type { AiModelInfo } from '@ai-image/shared';
 import { cn } from '../lib/cn';
-import type { AnalyzeInput } from '../lib/api';
 
 const TIMEFRAMES = ['30 сек', '1 минута', '3 минуты', '5 минут', '15 минут'];
+
+interface SubmitInput {
+  imageDataUrl: string;
+  pairHint?: string;
+  timeframeHint?: string;
+}
 
 export function UploadCard({
   onAnalyze,
   loading,
+  tier,
+  onTierChange,
+  freeCount,
+  paidModels,
+  paidModelId,
+  onPaidModelChange,
 }: {
-  onAnalyze: (input: AnalyzeInput) => void;
+  onAnalyze: (input: SubmitInput) => void;
   loading: boolean;
+  tier: 'free' | 'paid';
+  onTierChange: (t: 'free' | 'paid') => void;
+  freeCount: number;
+  paidModels: AiModelInfo[];
+  paidModelId: string | null;
+  onPaidModelChange: (id: string) => void;
 }) {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [pairHint, setPairHint] = useState('');
@@ -35,6 +53,9 @@ export function UploadCard({
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
   }, [readFile]);
+
+  const selectedPaid = paidModels.find((m) => m.modelId === paidModelId);
+  const paidCost = selectedPaid ? selectedPaid.costTokens || 1 : 1;
 
   function submit() {
     if (!imageDataUrl || loading) return;
@@ -84,11 +105,7 @@ export function UploadCard({
         </button>
       ) : (
         <div className="relative overflow-hidden rounded-xl border border-slate-800">
-          <img
-            src={imageDataUrl}
-            alt="Скриншот графика"
-            className="max-h-72 w-full bg-slate-950 object-contain"
-          />
+          <img src={imageDataUrl} alt="Скриншот графика" className="max-h-72 w-full bg-slate-950 object-contain" />
           <button
             type="button"
             onClick={() => setImageDataUrl(null)}
@@ -100,13 +117,7 @@ export function UploadCard({
         </div>
       )}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        hidden
-        onChange={(e) => readFile(e.target.files?.[0])}
-      />
+      <input ref={inputRef} type="file" accept="image/*" hidden onChange={(e) => readFile(e.target.files?.[0])} />
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block">
@@ -134,13 +145,64 @@ export function UploadCard({
         </label>
       </div>
 
+      {/* Выбор тарифа/модели */}
+      <div className="mt-4">
+        <span className="mb-1.5 block text-xs font-medium text-slate-400">Модель</span>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onTierChange('free')}
+            className={cn(
+              'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition',
+              tier === 'free'
+                ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
+                : 'border-slate-700 text-slate-400 hover:bg-slate-800',
+            )}
+          >
+            <Gift className="h-4 w-4" /> Бесплатно
+          </button>
+          <button
+            type="button"
+            onClick={() => onTierChange('paid')}
+            className={cn(
+              'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition',
+              tier === 'paid'
+                ? 'border-indigo-500/50 bg-indigo-500/15 text-indigo-300'
+                : 'border-slate-700 text-slate-400 hover:bg-slate-800',
+            )}
+          >
+            <Coins className="h-4 w-4" /> Платно
+          </button>
+        </div>
+
+        {tier === 'free' ? (
+          <p className="mt-2 text-xs text-slate-500">
+            Сервер сам подберёт рабочую модель{freeCount > 0 ? ` из ${freeCount} бесплатных` : ''}.
+          </p>
+        ) : paidModels.length > 0 ? (
+          <select
+            value={paidModelId ?? ''}
+            onChange={(e) => onPaidModelChange(e.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20"
+          >
+            {paidModels.map((m) => (
+              <option key={m.id} value={m.modelId}>
+                {m.label} · {m.costTokens || 1} ток.
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="mt-2 text-xs text-amber-400/80">Платные модели не настроены администратором.</p>
+        )}
+      </div>
+
       <button
         type="button"
         onClick={submit}
-        disabled={!imageDataUrl || loading}
+        disabled={!imageDataUrl || loading || (tier === 'paid' && paidModels.length === 0)}
         className={cn(
           'mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition',
-          !imageDataUrl || loading
+          !imageDataUrl || loading || (tier === 'paid' && paidModels.length === 0)
             ? 'cursor-not-allowed bg-slate-800 text-slate-500'
             : 'bg-gradient-to-r from-emerald-400 to-indigo-500 text-slate-950 hover:opacity-90 active:scale-[0.99]',
         )}
@@ -151,7 +213,7 @@ export function UploadCard({
           </>
         ) : (
           <>
-            <Sparkles className="h-4 w-4" /> Анализировать
+            <Sparkles className="h-4 w-4" /> Анализировать{tier === 'paid' ? ` · ${paidCost} ток.` : ''}
           </>
         )}
       </button>

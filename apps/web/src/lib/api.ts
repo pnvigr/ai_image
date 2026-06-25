@@ -1,10 +1,14 @@
 import type {
+  AiModelInfo,
   AnalysisHistoryItem,
   AnalysisResult,
   AnalyticsResult,
   AuthResponse,
+  AvailableModels,
   BillingInfo,
   LoginInput,
+  ModelRef,
+  ModelTier,
   PublicUser,
   RegisterInput,
   TopupRequest,
@@ -41,12 +45,18 @@ export class ApiError extends Error {
   status: number;
   upgrade?: boolean;
   topup?: boolean;
-  constructor(message: string, status: number, opts?: { upgrade?: boolean; topup?: boolean }) {
+  alternatives?: ModelRef[];
+  constructor(
+    message: string,
+    status: number,
+    opts?: { upgrade?: boolean; topup?: boolean; alternatives?: ModelRef[] },
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.upgrade = opts?.upgrade;
     this.topup = opts?.topup;
+    this.alternatives = opts?.alternatives;
   }
 }
 
@@ -56,6 +66,7 @@ export interface AnalyzeInput {
   pairHint?: string;
   timeframeHint?: string;
   tier?: 'free' | 'paid';
+  modelId?: string;
 }
 
 export async function analyze(input: AnalyzeInput): Promise<AnalysisResult> {
@@ -69,7 +80,11 @@ export async function analyze(input: AnalyzeInput): Promise<AnalysisResult> {
     throw new ApiError(
       (data.message as string) || (data.error as string) || 'Запрос не выполнен',
       res.status,
-      { upgrade: data.upgrade as boolean | undefined, topup: data.topup as boolean | undefined },
+      {
+        upgrade: data.upgrade as boolean | undefined,
+        topup: data.topup as boolean | undefined,
+        alternatives: data.alternatives as ModelRef[] | undefined,
+      },
     );
   }
   return data as unknown as AnalysisResult;
@@ -229,4 +244,59 @@ export async function getAnalyticsInsight(): Promise<AnalyticsResult> {
   const data = await parseJson(res);
   if (!res.ok) throw new ApiError((data.message as string) || 'Не удалось получить аналитику', res.status);
   return data as unknown as AnalyticsResult;
+}
+
+// ── Модели ──
+export async function getModels(): Promise<AvailableModels> {
+  const res = await fetch(`${API_BASE}/api/models`);
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError('Не удалось загрузить модели', res.status);
+  return data as unknown as AvailableModels;
+}
+
+export async function adminListModels(): Promise<AiModelInfo[]> {
+  const res = await fetch(`${API_BASE}/api/admin/models`, { headers: headers() });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError('Нет доступа', res.status);
+  return (data.models as AiModelInfo[]) ?? [];
+}
+
+export async function adminCreateModel(input: {
+  modelId: string;
+  label: string;
+  tier: ModelTier;
+  enabled?: boolean;
+  order?: number;
+  costTokens?: number;
+}): Promise<AiModelInfo> {
+  const res = await fetch(`${API_BASE}/api/admin/models`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(input),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  return data.model as AiModelInfo;
+}
+
+export async function adminUpdateModel(
+  id: string,
+  patch: { label?: string; enabled?: boolean; order?: number; costTokens?: number },
+): Promise<AiModelInfo> {
+  const res = await fetch(`${API_BASE}/api/admin/models/${id}`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify(patch),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  return data.model as AiModelInfo;
+}
+
+export async function adminDeleteModel(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/admin/models/${id}`, { method: 'DELETE', headers: headers() });
+  if (!res.ok && res.status !== 204) {
+    const data = await parseJson(res);
+    throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  }
 }
