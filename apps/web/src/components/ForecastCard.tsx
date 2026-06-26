@@ -8,7 +8,7 @@ const DIRECTION: Record<
   { label: string; text: string; bg: string; ring: string; bar: string; Icon: LucideIcon }
 > = {
   UP: {
-    label: 'ВВЕРХ',
+    label: 'UP',
     text: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
     ring: 'ring-emerald-500/30',
@@ -16,7 +16,7 @@ const DIRECTION: Record<
     Icon: TrendingUp,
   },
   DOWN: {
-    label: 'ВНИЗ',
+    label: 'DOWN',
     text: 'text-rose-400',
     bg: 'bg-rose-500/10',
     ring: 'ring-rose-500/30',
@@ -24,7 +24,7 @@ const DIRECTION: Record<
     Icon: TrendingDown,
   },
   NEUTRAL: {
-    label: 'НЕЙТРАЛЬНО',
+    label: 'NEUTRAL',
     text: 'text-amber-400',
     bg: 'bg-amber-500/10',
     ring: 'ring-amber-500/30',
@@ -61,25 +61,25 @@ export function ForecastCard({ result }: { result: AnalysisResult }) {
       </div>
 
       <div className="space-y-3 px-5 py-4">
-        <Row icon="⏰" label="Время прогноза">
-          {time.toLocaleTimeString('ru-RU')}
+        <Row icon="⏰" label="Forecast time">
+          {time.toLocaleTimeString('en-US')}
         </Row>
-        <Row icon="💱" label="Валютная пара">
+        <Row icon="💱" label="Currency pair">
           {result.pair}
         </Row>
-        <Row icon="📈" label="Направление">
+        <Row icon="📈" label="Direction">
           <span className={cn('font-semibold', dir.text)}>{dir.label}</span>
         </Row>
-        <Row icon="⏳" label="Экспирация">
+        <Row icon="⏳" label="Expiry">
           {result.timeframe}
         </Row>
-        <Row icon="🤖" label="Модель">
-          {result.mock ? 'демо (mock)' : result.model}
+        <Row icon="🤖" label="Model">
+          {result.mock ? 'demo (mock)' : result.model}
         </Row>
 
         <div>
           <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
-            <span>Уверенность модели</span>
+            <span>Model confidence</span>
             <span className={cn('font-semibold', dir.text)}>{confidence}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-800">
@@ -93,7 +93,7 @@ export function ForecastCard({ result }: { result: AnalysisResult }) {
         <div className="flex items-start gap-2 pt-1">
           <span className="select-none">📊</span>
           <p className="text-sm leading-relaxed text-slate-200">
-            <span className="font-semibold text-slate-400">Описание: </span>
+            <span className="font-semibold text-slate-400">Description: </span>
             {result.description}
           </p>
         </div>

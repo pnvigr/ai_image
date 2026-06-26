@@ -38,13 +38,13 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
     if (!user) {
       return res
         .status(401)
-        .json({ error: 'auth_required', message: 'Войдите, чтобы использовать платную модель.' });
+        .json({ error: 'auth_required', message: 'Sign in to use a paid model.' });
     }
     const paidList = await listEnabledByTier('paid');
     if (paidList.length === 0) {
       return res
         .status(503)
-        .json({ error: 'no_paid_models', message: 'Платные модели не настроены. Обратитесь к администратору.' });
+        .json({ error: 'no_paid_models', message: 'No paid models are configured. Contact the administrator.' });
     }
     // Берём выбранную модель; если не задана/не найдена — первую доступную.
     chosenPaid = (modelId && paidList.find((m) => m.modelId === modelId)) || paidList[0];
@@ -52,7 +52,7 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
     if (user.tokensBalance < cost) {
       return res.status(402).json({
         error: 'insufficient_tokens',
-        message: 'Недостаточно токенов. Пополните баланс, чтобы пользоваться платной моделью.',
+        message: 'Not enough tokens. Top up your balance to use a paid model.',
         topup: true,
       });
     }
@@ -62,7 +62,7 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
     if (usedToday >= config.billing.freeDailyLimit) {
       return res.status(429).json({
         error: 'free_limit',
-        message: 'Дневной лимит бесплатных анализов исчерпан. Переключитесь на платную модель.',
+        message: 'Daily free-analysis limit reached. Switch to a paid model.',
         upgrade: true,
       });
     }
@@ -85,7 +85,7 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
         const others = (await listEnabledByTier('paid')).filter((m) => m.modelId !== chosenPaid!.modelId);
         return res.status(502).json({
           error: 'paid_model_failed',
-          message: `Модель «${chosenPaid.label}» сейчас недоступна. Попробуйте другую платную модель.`,
+          message: `The “${chosenPaid.label}” model is unavailable right now. Try another paid model.`,
           alternatives: others.map(toRef),
         });
       }
@@ -101,7 +101,7 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
         if (err instanceof AllModelsFailedError) {
           return res.status(502).json({
             error: 'all_free_failed',
-            message: 'Все бесплатные модели сейчас недоступны. Попробуйте платную модель.',
+            message: 'All free models are unavailable right now. Try a paid model.',
             upgrade: true,
           });
         }
@@ -136,11 +136,11 @@ analyzeRouter.post('/', optionalAuth, async (req, res) => {
     if (err instanceof ZodError) {
       return res.status(422).json({
         error: 'bad_model_output',
-        message: 'Модель вернула ответ не в ожидаемом формате. Попробуйте ещё раз.',
+        message: 'The model returned an unexpected format. Please try again.',
         details: err.flatten(),
       });
     }
-    console.error('[analyze] неожиданная ошибка:', err);
-    return res.status(500).json({ error: 'internal', message: 'Внутренняя ошибка сервера.' });
+    console.error('[analyze] unexpected error:', err);
+    return res.status(500).json({ error: 'internal', message: 'Internal server error.' });
   }
 });

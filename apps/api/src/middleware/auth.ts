@@ -6,18 +6,18 @@ import { findUserById } from '../store/users.js';
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'unauthorized', message: 'Требуется вход в систему.' });
+    return res.status(401).json({ error: 'unauthorized', message: 'Authentication required.' });
   }
   try {
     const payload = verifyToken(header.slice(7));
     const user = await findUserById(payload.sub);
     if (!user) {
-      return res.status(401).json({ error: 'unauthorized', message: 'Пользователь не найден.' });
+      return res.status(401).json({ error: 'unauthorized', message: 'User not found.' });
     }
     req.user = toPublicUser(user);
     next();
   } catch {
-    return res.status(401).json({ error: 'unauthorized', message: 'Невалидный или просроченный токен.' });
+    return res.status(401).json({ error: 'unauthorized', message: 'Invalid or expired token.' });
   }
 }
 
@@ -39,7 +39,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
 /** Требует роль admin (используется в Фазе 4). Применять после requireAuth. */
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.user?.role !== 'admin') {
-    return res.status(403).json({ error: 'forbidden', message: 'Нужны права администратора.' });
+    return res.status(403).json({ error: 'forbidden', message: 'Administrator rights required.' });
   }
   next();
 }

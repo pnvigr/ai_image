@@ -9,9 +9,9 @@ export interface TokenPackage {
 }
 
 export const TOKEN_PACKAGES: TokenPackage[] = [
-  { id: 'starter', tokens: 50, priceLabel: '299 ₽' },
-  { id: 'standard', tokens: 200, priceLabel: '999 ₽', bonus: '+20 бонусом' },
-  { id: 'pro', tokens: 1000, priceLabel: '3 990 ₽', bonus: '+150 бонусом' },
+  { id: 'starter', tokens: 50, priceLabel: '$2.99' },
+  { id: 'standard', tokens: 200, priceLabel: '$9.99', bonus: '+20 bonus' },
+  { id: 'pro', tokens: 1000, priceLabel: '$39.90', bonus: '+150 bonus' },
 ];
 
 export interface BillingInfo {

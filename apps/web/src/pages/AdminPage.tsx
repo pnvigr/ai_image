@@ -31,7 +31,7 @@ export function AdminPage() {
       setTopups(t);
       setModels(m);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Ошибка загрузки');
+      setError(e instanceof ApiError ? e.message : 'Failed to load');
     }
   }
 
@@ -53,7 +53,7 @@ export function AdminPage() {
     <div className="space-y-8">
       <div className="flex items-center gap-2">
         <ShieldCheck className="h-5 w-5 text-indigo-400" />
-        <h2 className="text-lg font-bold tracking-tight">Админка</h2>
+        <h2 className="text-lg font-bold tracking-tight">Admin</h2>
       </div>
 
       {error && (
@@ -62,13 +62,13 @@ export function AdminPage() {
         </div>
       )}
 
-      {/* Модели ИИ */}
+      {/* AI models */}
       <section>
         <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-300">
-          <Cpu className="h-4 w-4" /> Модели ИИ ({models.length})
+          <Cpu className="h-4 w-4" /> AI models ({models.length})
         </h3>
         <p className="mb-3 text-xs text-slate-500">
-          Бесплатные перебираются по порядку (order) до первого успеха. Платные пользователь выбирает сам.
+          Free models are tried in order (by `order`) until one succeeds. Paid models are chosen by the user.
         </p>
         <CreateModelForm onCreated={reload} onError={setError} />
         <div className="mt-3 space-y-2">
@@ -78,11 +78,11 @@ export function AdminPage() {
         </div>
       </section>
 
-      {/* Заявки на пополнение */}
+      {/* Top-up requests */}
       <section>
-        <h3 className="mb-3 text-sm font-semibold text-slate-300">Заявки на пополнение</h3>
+        <h3 className="mb-3 text-sm font-semibold text-slate-300">Top-up requests</h3>
         {topups.length === 0 ? (
-          <p className="text-sm text-slate-500">Заявок нет.</p>
+          <p className="text-sm text-slate-500">No requests.</p>
         ) : (
           <div className="space-y-2">
             {topups.map((t) => (
@@ -92,7 +92,7 @@ export function AdminPage() {
               >
                 <span className="font-medium text-slate-200">{t.userEmail ?? t.userId}</span>
                 <span className="text-slate-500">
-                  {t.tokens} токенов · {t.packageId}
+                  {t.tokens} tokens · {t.packageId}
                 </span>
                 <span
                   className={cn(
@@ -113,12 +113,12 @@ export function AdminPage() {
                         await adminFulfillTopup(t.id);
                         await reload();
                       } catch (e) {
-                        setError(e instanceof ApiError ? e.message : 'Ошибка');
+                        setError(e instanceof ApiError ? e.message : 'Error');
                       }
                     }}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:opacity-90"
                   >
-                    <Check className="h-3.5 w-3.5" /> Зачислить
+                    <Check className="h-3.5 w-3.5" /> Credit
                   </button>
                 )}
               </div>
@@ -127,10 +127,10 @@ export function AdminPage() {
         )}
       </section>
 
-      {/* Пользователи */}
+      {/* Users */}
       <section>
         <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-300">
-          <Users className="h-4 w-4" /> Пользователи ({users.length})
+          <Users className="h-4 w-4" /> Users ({users.length})
         </h3>
         <div className="space-y-2">
           {users.map((u) => (
@@ -164,7 +164,7 @@ function CreateModelForm({ onCreated, onError }: { onCreated: () => Promise<void
       setCost('0');
       await onCreated();
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : 'Ошибка');
+      onError(e instanceof ApiError ? e.message : 'Error');
     } finally {
       setBusy(false);
     }
@@ -181,7 +181,7 @@ function CreateModelForm({ onCreated, onError }: { onCreated: () => Promise<void
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        placeholder="Название"
+        placeholder="Name"
         className="w-32 rounded-lg border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-emerald-500/60"
       />
       <select
@@ -197,7 +197,7 @@ function CreateModelForm({ onCreated, onError }: { onCreated: () => Promise<void
           type="number"
           value={cost}
           onChange={(e) => setCost(e.target.value)}
-          title="Стоимость в токенах"
+          title="Cost in tokens"
           className="w-20 rounded-lg border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-emerald-500/60"
         />
       )}
@@ -206,7 +206,7 @@ function CreateModelForm({ onCreated, onError }: { onCreated: () => Promise<void
         disabled={busy}
         className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-400 to-indigo-500 px-3 py-1.5 text-sm font-semibold text-slate-950 hover:opacity-90 disabled:opacity-50"
       >
-        <Plus className="h-4 w-4" /> Добавить
+        <Plus className="h-4 w-4" /> Add
       </button>
     </div>
   );
@@ -229,7 +229,7 @@ function ModelRow({
       await adminUpdateModel(m.id, patch);
       await onChanged();
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : 'Ошибка');
+      onError(e instanceof ApiError ? e.message : 'Error');
     } finally {
       setBusy(false);
     }
@@ -241,7 +241,7 @@ function ModelRow({
       await adminDeleteModel(m.id);
       await onChanged();
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : 'Ошибка');
+      onError(e instanceof ApiError ? e.message : 'Error');
       setBusy(false);
     }
   }
@@ -279,7 +279,7 @@ function ModelRow({
         </label>
         {m.tier === 'paid' && (
           <label className="flex items-center gap-1 text-xs text-slate-500">
-            цена
+            price
             <input
               type="number"
               defaultValue={m.costTokens}
@@ -294,7 +294,7 @@ function ModelRow({
         <button
           onClick={() => update({ enabled: !m.enabled })}
           disabled={busy}
-          title={m.enabled ? 'Выключить' : 'Включить'}
+          title={m.enabled ? 'Disable' : 'Enable'}
           className={cn(
             'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition disabled:opacity-50',
             m.enabled
@@ -302,13 +302,13 @@ function ModelRow({
               : 'border-slate-600 text-slate-400 hover:bg-slate-800',
           )}
         >
-          <Power className="h-3.5 w-3.5" /> {m.enabled ? 'вкл' : 'выкл'}
+          <Power className="h-3.5 w-3.5" /> {m.enabled ? 'on' : 'off'}
         </button>
         <button
           onClick={remove}
           disabled={busy}
           className="text-slate-600 transition hover:text-rose-400 disabled:opacity-50"
-          aria-label="Удалить модель"
+          aria-label="Delete model"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -338,7 +338,7 @@ function UserRow({
       setDelta('');
       await onChanged();
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : 'Ошибка');
+      onError(e instanceof ApiError ? e.message : 'Error');
     } finally {
       setBusy(false);
     }
@@ -351,7 +351,7 @@ function UserRow({
       await adminSetRole(u.id, next);
       await onChanged();
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : 'Ошибка');
+      onError(e instanceof ApiError ? e.message : 'Error');
     } finally {
       setBusy(false);
     }
@@ -369,14 +369,14 @@ function UserRow({
         {u.role}
       </span>
       <span className="text-slate-400">
-        баланс: <span className="font-semibold text-emerald-300">{u.tokensBalance}</span>
+        balance: <span className="font-semibold text-emerald-300">{u.tokensBalance}</span>
       </span>
       <div className="ml-auto flex items-center gap-2">
         <input
           type="number"
           value={delta}
           onChange={(e) => setDelta(e.target.value)}
-          placeholder="±токены"
+          placeholder="±tokens"
           disabled={busy}
           className="w-24 rounded-lg border border-slate-700 bg-slate-950/60 px-2 py-1 text-sm text-slate-100 outline-none focus:border-emerald-500/60"
         />
@@ -385,7 +385,7 @@ function UserRow({
           disabled={busy}
           className="rounded-lg border border-slate-700 px-3 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 disabled:opacity-50"
         >
-          Начислить
+          Credit
         </button>
         <button
           onClick={toggleRole}

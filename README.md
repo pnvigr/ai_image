@@ -1,109 +1,136 @@
 # ChartSense AI
 
-Образовательный дипломный проект: **как ИИ анализирует скриншоты трейдинговых графиков**.
+Educational diploma project: **how AI analyzes screenshots of trading charts**.
 
-Пользователь загружает скриншот графика → бэкенд отправляет его в vision-модель через
-[OpenRouter](https://openrouter.ai) → модель возвращает структурированный «прогноз»
-(пара, направление, экспирация, уверенность, описание), который красиво показывается на фронте.
+A user uploads a chart screenshot → the backend sends it to a vision model via
+[OpenRouter](https://openrouter.ai) → the model returns a structured “forecast”
+(pair, direction, expiry, confidence, description) that is rendered nicely on the frontend.
 
-> ⚠️ **Главный тезис работы:** ИИ **не предсказывает** рынок. Любой «прогноз» — это разбор
-> картинки, а не гарантия. Реальный винрейт определяется рынком и условиями платформы, а не
-> «силой» модели. Дисклеймер встроен в интерфейс намеренно.
+> ⚠️ **Core thesis:** AI does **not** predict the market. Any “forecast” is a reading of the
+> image, not a guarantee. The real win rate is determined by the market and the platform’s
+> conditions, not by the “power” of the model. The disclaimer is built into the UI on purpose.
 
-## Стек
+## Stack
 
-- **Монорепо:** pnpm workspaces + TypeScript
+- **Monorepo:** pnpm workspaces + TypeScript
 - **`apps/api`** — Node.js + Express + MongoDB (Mongoose) + OpenRouter
 - **`apps/web`** — React + Vite + Tailwind CSS
-- **`packages/shared`** — общие типы и Zod-схемы (единый формат ответа для фронта и бэка)
-- **Деплой:** Railway (Фаза 6)
+- **`packages/shared`** — shared types & Zod schemas (one response format for front and back)
+- **Deploy:** Railway
 
-## Быстрый старт
+## Quick start
 
 ```bash
-# 1. Установить зависимости (Node >= 20, pnpm >= 9)
+# 1. Install dependencies (Node >= 20, pnpm >= 9)
 pnpm install
 
-# 2. (опционально) задать переменные окружения
+# 2. (optional) configure environment variables
 cp apps/api/.env.example apps/api/.env
-#   без MONGODB_URI       → история отключена, остальное работает
-#   без OPENROUTER_API_KEY → API отвечает mock-ответами (demo-режим работает из коробки)
+#   without MONGODB_URI        → history disabled, everything else works
+#   without OPENROUTER_API_KEY → API returns mock responses (demo works out of the box)
 
-# 3. Запустить фронт + бэк вместе
+# 3. Run frontend + backend together
 pnpm dev
 ```
 
-- Фронтенд: http://localhost:5173
-- API: http://localhost:4000 · health-check: http://localhost:4000/api/health
+- Frontend: http://localhost:5173
+- API: http://localhost:4000 · health check: http://localhost:4000/api/health
 
-В деве Vite проксирует `/api` на бэкенд, поэтому фронт работает без настройки.
+In dev, Vite proxies `/api` to the backend, so the frontend needs no configuration.
 
-## Скрипты
+## Scripts
 
-| Команда | Что делает |
+| Command | What it does |
 |---|---|
-| `pnpm dev` | Запускает `shared` (watch), `api` и `web` параллельно |
-| `pnpm dev:api` / `pnpm dev:web` | Запуск по отдельности |
-| `pnpm build` | Сборка всех пакетов (в топологическом порядке) |
-| `pnpm typecheck` | Проверка типов во всём монорепо |
-| `pnpm start` | Прод-запуск API из собранного `dist` |
+| `pnpm dev` | Runs `shared` (watch), `api` and `web` in parallel |
+| `pnpm dev:api` / `pnpm dev:web` | Run individually |
+| `pnpm build` | Build all packages (in topological order) |
+| `pnpm typecheck` | Type-check the whole monorepo |
+| `pnpm start` | Production start of the API from the built `dist` |
 
 ## OpenRouter
 
-1. Получи ключ на https://openrouter.ai/keys
-2. Положи в `apps/api/.env`:
+1. Get a key at https://openrouter.ai/keys
+2. Put it in `apps/api/.env`:
    ```env
    OPENROUTER_API_KEY=sk-or-...
    OPENROUTER_FREE_MODEL=meta-llama/llama-3.2-11b-vision-instruct:free
    ```
-3. Бесплатные vision-модели иногда меняются/упираются в лимиты — актуальный список
-   ищи на https://openrouter.ai/models?modality=text+image (фильтр «free»). Модель меняется
-   одной переменной окружения, код трогать не нужно.
+3. Free vision models change / hit rate limits — browse the current list at
+   https://openrouter.ai/models?modality=text+image (filter “free”). You can pass several
+   via `OPENROUTER_FREE_MODELS` (comma-separated) — the server tries them **in order until one
+   succeeds**. Switching a model is just an env var; no code changes needed.
 
-Без ключа API возвращает mock-ответы — интерфейс полностью кликабелен для демо.
+Without a key, the API returns mock responses — the UI is fully clickable for a demo.
 
-## Деплой на Railway
+## Models (free fallback / paid choice)
 
-Проект — pnpm-монорепо. Проще всего поднять **одним сервисом**: API отдаёт и REST, и
-собранный фронт (SPA) с одного домена — без CORS и без отдельного URL для фронта.
+- Models live in the database and are managed in the **Admin → AI models** panel. The env
+  arrays `OPENROUTER_FREE_MODELS` / `OPENROUTER_PAID_MODELS` only **seed** the DB on first run.
+- **Free:** the server iterates enabled free models by `order` until one returns a valid answer.
+- **Paid:** the user picks a model (the choice is remembered in their profile); if the request
+  fails, the UI offers the other paid models.
 
-### Вариант 1 — один сервис (рекомендуется)
+## Deploy on Railway
 
-1. Создай проект на Railway из этого репозитория (в корне есть `railway.json`).
-2. Добавь базу: **New → Database → MongoDB**.
-3. В сервисе приложения задай переменные окружения:
+The project is a pnpm monorepo. The easiest setup is a **single service**: the API serves both
+the REST API and the built frontend (SPA) from one domain — no CORS, no separate frontend URL.
+
+### Option 1 — single service (recommended)
+
+1. Create a Railway project from this repository (the root `railway.json` is already configured).
+2. Add a database: **New → Database → MongoDB**.
+3. Set the service environment variables:
    ```
    SERVE_WEB=true
-   MONGODB_URI=${{MongoDB.MONGO_URL}}     # ссылка на переменную базы Railway
-   JWT_SECRET=<длинная случайная строка>
-   OPENROUTER_API_KEY=<ключ; пусто = demo/mock>
-   ADMIN_EMAIL=<твой email — станет админом при входе>
-   SUPPORT_CONTACT=<твой контакт для зачисления токенов>
-   # опционально: FREE_DAILY_LIMIT, PAID_ANALYSIS_COST, OPENROUTER_FREE_MODEL, OPENROUTER_TEXT_MODEL
+   MONGODB_URI=${{MongoDB.MONGO_URL}}     # reference to the Railway DB variable
+   JWT_SECRET=<long random string>
+   OPENROUTER_API_KEY=<key; empty = demo/mock>
+   ADMIN_EMAIL=<your email — becomes admin on sign-in>
+   SUPPORT_CONTACT=<your contact for crediting tokens>
+   # optional: FREE_DAILY_LIMIT, PAID_ANALYSIS_COST,
+   #           OPENROUTER_FREE_MODELS, OPENROUTER_PAID_MODELS
    ```
-   `VITE_API_URL` оставь пустым — фронт ходит на тот же домен (`/api`).
-4. Build Command: `pnpm build` · Start Command: `pnpm start` (уже в `railway.json`).
-5. Открой публичный домен сервиса — это приложение целиком.
+   Leave `VITE_API_URL` empty — the frontend talks to the same domain (`/api`).
+4. Build command: `pnpm build` · Start command: `pnpm start` (already in `railway.json`).
+5. Open the service’s public domain — that’s the whole app.
 
-> `VITE_API_URL` инлайнится при сборке фронта. Для варианта 1 он пустой,
-> поэтому фронт использует относительный `/api` — что и нужно.
+> `VITE_API_URL` is inlined at frontend build time. For Option 1 it’s empty, so the frontend
+> uses the relative `/api` — which is exactly what we want.
 
-### Вариант 2 — два сервиса (api и web раздельно)
+### Option 2 — two services (api and web separately)
 
-Два сервиса из одного репозитория (Root Directory у обоих — корень):
+Two services from one repo (Root Directory = repo root for both):
 
-- **API** — Build: `pnpm run build:api` · Start: `pnpm run start:api`
-  Переменные: `MONGODB_URI`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `ADMIN_EMAIL`,
-  `SUPPORT_CONTACT`, `CORS_ORIGIN=<публичный URL web-сервиса>`.
+- **API** — Build: `pnpm run build:api` · Start: `pnpm start`
+  Variables: `MONGODB_URI`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `ADMIN_EMAIL`,
+  `SUPPORT_CONTACT`, `CORS_ORIGIN=<public URL of the web service>`.
 - **WEB** — Build: `pnpm run build:web` · Start: `pnpm run start:web`
-  Переменная: `VITE_API_URL=<публичный URL api-сервиса>` (нужна на этапе сборки).
+  Variable: `VITE_API_URL=<public URL of the api service>` (needed at build time).
 
-## Дорожная карта
+## Environment variables
 
-- [x] **Фаза 1** — каркас монорепо + ядро: загрузка скриншота → OpenRouter → карточка-прогноз
-- [x] **Фаза 2** — аутентификация (JWT)
-- [x] **Фаза 3** — история анализов + ручная отметка «зашёл / результат / payout»
-- [x] **Фаза 4** — токены + платная модель + админка
-- [x] **Фаза 5** — аналитика сделок и рекомендации инструментов
-- [x] **Фаза 6** — деплой на Railway
-- [x] **Фаза 7** — модели в БД + админка: free-фоллбэк по списку, выбор платной модели
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `4000` | API port |
+| `MONGODB_URI` | — | MongoDB connection string (empty = no persistence) |
+| `JWT_SECRET` | insecure dev default | Secret for signing JWTs (set in prod) |
+| `SERVE_WEB` | `false` | Serve the built frontend from the API (single-service deploy) |
+| `CORS_ORIGIN` | `*` | Allowed origins (use the web URL for the two-service deploy) |
+| `OPENROUTER_API_KEY` | — | Empty = demo/mock mode |
+| `OPENROUTER_FREE_MODELS` | — | Comma-separated free models (seed) |
+| `OPENROUTER_PAID_MODELS` | — | Comma-separated paid models (seed) |
+| `ADMIN_EMAIL` | — | This email becomes admin on sign-in |
+| `SUPPORT_CONTACT` | placeholder | Shown on the billing page for token crediting |
+| `FREE_DAILY_LIMIT` | `20` | Daily free analyses per user |
+| `PAID_ANALYSIS_COST` | `1` | Tokens per paid analysis |
+
+## Roadmap
+
+- [x] **Phase 1** — monorepo skeleton + core: screenshot → OpenRouter → forecast card
+- [x] **Phase 2** — authentication (JWT)
+- [x] **Phase 3** — analysis history + manual outcome marking (entered / result / payout)
+- [x] **Phase 4** — tokens + paid model + admin panel
+- [x] **Phase 5** — trade analytics & instrument recommendations
+- [x] **Phase 6** — deploy on Railway
+- [x] **Phase 7** — models in DB + admin: free fallback list, paid model choice

@@ -104,5 +104,5 @@ export async function seedModelsIfEmpty(): Promise<void> {
       costTokens: config.billing.paidAnalysisCost,
     });
   }
-  console.log(`[models] засеяно из env: ${freeIds.length} free, ${paidIds.length} paid`);
+  console.log(`[models] seeded from env: ${freeIds.length} free, ${paidIds.length} paid`);
 }

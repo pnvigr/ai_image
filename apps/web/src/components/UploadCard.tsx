@@ -3,7 +3,7 @@ import { ImageUp, X, Loader2, Sparkles, ClipboardPaste, Gift, Coins } from 'luci
 import type { AiModelInfo } from '@ai-image/shared';
 import { cn } from '../lib/cn';
 
-const TIMEFRAMES = ['30 сек', '1 минута', '3 минуты', '5 минут', '15 минут'];
+const TIMEFRAMES = ['30 sec', '1 minute', '3 minutes', '5 minutes', '15 minutes'];
 
 interface SubmitInput {
   imageDataUrl: string;
@@ -32,7 +32,7 @@ export function UploadCard({
 }) {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [pairHint, setPairHint] = useState('');
-  const [timeframeHint, setTimeframeHint] = useState('3 минуты');
+  const [timeframeHint, setTimeframeHint] = useState('3 minutes');
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,7 +43,7 @@ export function UploadCard({
     reader.readAsDataURL(file);
   }, []);
 
-  // Вставка скриншота из буфера обмена (Ctrl+V) — удобно после «ножниц».
+  // Paste a screenshot from the clipboard (Ctrl+V) — handy after the Snipping Tool.
   useEffect(() => {
     function onPaste(e: ClipboardEvent) {
       const items = Array.from(e.clipboardData?.items ?? []);
@@ -69,7 +69,7 @@ export function UploadCard({
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-xl shadow-black/20 backdrop-blur">
       <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-300">
-        <ImageUp className="h-4 w-4 text-emerald-400" /> Скриншот графика
+        <ImageUp className="h-4 w-4 text-emerald-400" /> Chart screenshot
       </h2>
 
       {!imageDataUrl ? (
@@ -97,20 +97,20 @@ export function UploadCard({
             <ImageUp className="h-6 w-6 text-emerald-400" />
           </div>
           <div>
-            <p className="font-medium text-slate-200">Перетащи скриншот сюда или нажми</p>
+            <p className="font-medium text-slate-200">Drag a screenshot here or click</p>
             <p className="mt-1 flex items-center justify-center gap-1.5 text-xs text-slate-500">
-              <ClipboardPaste className="h-3.5 w-3.5" /> можно вставить из буфера (Ctrl+V) · PNG, JPG
+              <ClipboardPaste className="h-3.5 w-3.5" /> you can paste from the clipboard (Ctrl+V) · PNG, JPG
             </p>
           </div>
         </button>
       ) : (
         <div className="relative overflow-hidden rounded-xl border border-slate-800">
-          <img src={imageDataUrl} alt="Скриншот графика" className="max-h-72 w-full bg-slate-950 object-contain" />
+          <img src={imageDataUrl} alt="Chart screenshot" className="max-h-72 w-full bg-slate-950 object-contain" />
           <button
             type="button"
             onClick={() => setImageDataUrl(null)}
             className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-slate-950/80 text-slate-300 transition hover:bg-slate-800 hover:text-white"
-            aria-label="Убрать изображение"
+            aria-label="Remove image"
           >
             <X className="h-4 w-4" />
           </button>
@@ -121,16 +121,16 @@ export function UploadCard({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-slate-400">Пара (необязательно)</span>
+          <span className="mb-1.5 block text-xs font-medium text-slate-400">Pair (optional)</span>
           <input
             value={pairHint}
             onChange={(e) => setPairHint(e.target.value)}
-            placeholder="напр. GBP/USD"
+            placeholder="e.g. GBP/USD"
             className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
           />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-slate-400">Экспирация</span>
+          <span className="mb-1.5 block text-xs font-medium text-slate-400">Expiry</span>
           <select
             value={timeframeHint}
             onChange={(e) => setTimeframeHint(e.target.value)}
@@ -145,9 +145,9 @@ export function UploadCard({
         </label>
       </div>
 
-      {/* Выбор тарифа/модели */}
+      {/* Tier / model selection */}
       <div className="mt-4">
-        <span className="mb-1.5 block text-xs font-medium text-slate-400">Модель</span>
+        <span className="mb-1.5 block text-xs font-medium text-slate-400">Model</span>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -159,7 +159,7 @@ export function UploadCard({
                 : 'border-slate-700 text-slate-400 hover:bg-slate-800',
             )}
           >
-            <Gift className="h-4 w-4" /> Бесплатно
+            <Gift className="h-4 w-4" /> Free
           </button>
           <button
             type="button"
@@ -171,13 +171,13 @@ export function UploadCard({
                 : 'border-slate-700 text-slate-400 hover:bg-slate-800',
             )}
           >
-            <Coins className="h-4 w-4" /> Платно
+            <Coins className="h-4 w-4" /> Paid
           </button>
         </div>
 
         {tier === 'free' ? (
           <p className="mt-2 text-xs text-slate-500">
-            Сервер сам подберёт рабочую модель{freeCount > 0 ? ` из ${freeCount} бесплатных` : ''}.
+            The server picks a working model automatically{freeCount > 0 ? ` from ${freeCount} free ones` : ''}.
           </p>
         ) : paidModels.length > 0 ? (
           <select
@@ -187,12 +187,12 @@ export function UploadCard({
           >
             {paidModels.map((m) => (
               <option key={m.id} value={m.modelId}>
-                {m.label} · {m.costTokens || 1} ток.
+                {m.label} · {m.costTokens || 1} tokens
               </option>
             ))}
           </select>
         ) : (
-          <p className="mt-2 text-xs text-amber-400/80">Платные модели не настроены администратором.</p>
+          <p className="mt-2 text-xs text-amber-400/80">No paid models configured by the administrator.</p>
         )}
       </div>
 
@@ -209,11 +209,11 @@ export function UploadCard({
       >
         {loading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Анализирую…
+            <Loader2 className="h-4 w-4 animate-spin" /> Analyzing…
           </>
         ) : (
           <>
-            <Sparkles className="h-4 w-4" /> Анализировать{tier === 'paid' ? ` · ${paidCost} ток.` : ''}
+            <Sparkles className="h-4 w-4" /> Analyze{tier === 'paid' ? ` · ${paidCost} tokens` : ''}
           </>
         )}
       </button>

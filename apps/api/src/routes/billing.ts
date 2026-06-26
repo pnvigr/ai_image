@@ -23,7 +23,7 @@ billingRouter.post('/topup', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'invalid_request', details: parse.error.flatten() });
   }
   const pkg = TOKEN_PACKAGES.find((p) => p.id === parse.data.packageId);
-  if (!pkg) return res.status(404).json({ error: 'unknown_package', message: 'Пакет не найден.' });
+  if (!pkg) return res.status(404).json({ error: 'unknown_package', message: 'Package not found.' });
 
   const request = await createTopup({
     userId: req.user!.id,
@@ -33,7 +33,7 @@ billingRouter.post('/topup', requireAuth, async (req, res) => {
   });
   res.status(201).json({
     request,
-    message: `Заявка создана. Для зачисления ${pkg.tokens} токенов напишите в поддержку: ${config.billing.supportContact}`,
+    message: `Request created. To credit ${pkg.tokens} tokens, contact support: ${config.billing.supportContact}`,
   });
 });
 

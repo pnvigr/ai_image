@@ -23,7 +23,7 @@ analyticsRouter.post('/insight', async (req, res) => {
     if (err instanceof OpenRouterError && err.status === 429) {
       return res
         .status(429)
-        .json({ error: 'rate_limited', message: 'Лимит модели исчерпан. Попробуйте позже.' });
+        .json({ error: 'rate_limited', message: 'Model rate limit reached. Please try again later.' });
     }
     // На любой другой сбой провайдера — мягкий фоллбэк на mock-разбор.
     const insight = mockTradeInsight({ stats, byInstrument });

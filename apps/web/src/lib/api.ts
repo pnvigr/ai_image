@@ -78,7 +78,7 @@ export async function analyze(input: AnalyzeInput): Promise<AnalysisResult> {
   const data = await parseJson(res);
   if (!res.ok) {
     throw new ApiError(
-      (data.message as string) || (data.error as string) || 'Запрос не выполнен',
+      (data.message as string) || (data.error as string) || 'Request failed',
       res.status,
       {
         upgrade: data.upgrade as boolean | undefined,
@@ -98,7 +98,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     body: JSON.stringify(input),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка регистрации', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Registration failed', res.status);
   return data as unknown as AuthResponse;
 }
 
@@ -109,7 +109,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse> {
     body: JSON.stringify(input),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка входа', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Sign-in failed', res.status);
   return data as unknown as AuthResponse;
 }
 
@@ -128,7 +128,7 @@ export async function setPreferredModel(modelId: string | null): Promise<PublicU
     body: JSON.stringify({ preferredModelId: modelId }),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Error', res.status);
   return data.user as PublicUser;
 }
 
@@ -136,7 +136,7 @@ export async function setPreferredModel(modelId: string | null): Promise<PublicU
 export async function listAnalyses(): Promise<AnalysisHistoryItem[]> {
   const res = await fetch(`${API_BASE}/api/analyses`, { headers: headers() });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка загрузки истории', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Failed to load history', res.status);
   return (data.items as AnalysisHistoryItem[]) ?? [];
 }
 
@@ -147,7 +147,7 @@ export async function updateOutcome(id: string, patch: UpdateOutcomeInput): Prom
     body: JSON.stringify(patch),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Не удалось сохранить', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Failed to save', res.status);
   return data.item as AnalysisHistoryItem;
 }
 
@@ -155,7 +155,7 @@ export async function deleteAnalysis(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/analyses/${id}`, { method: 'DELETE', headers: headers() });
   if (!res.ok && res.status !== 204) {
     const data = await parseJson(res);
-    throw new ApiError((data.message as string) || 'Не удалось удалить', res.status);
+    throw new ApiError((data.message as string) || 'Failed to delete', res.status);
   }
 }
 
@@ -181,7 +181,7 @@ export async function getHealth(): Promise<HealthInfo | null> {
 export async function getBillingInfo(): Promise<BillingInfo> {
   const res = await fetch(`${API_BASE}/api/billing/info`);
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError('Не удалось загрузить тарифы', res.status);
+  if (!res.ok) throw new ApiError('Failed to load pricing', res.status);
   return data as unknown as BillingInfo;
 }
 
@@ -192,14 +192,14 @@ export async function requestTopup(packageId: string): Promise<{ request: TopupR
     body: JSON.stringify({ packageId }),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Не удалось создать заявку', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Failed to create request', res.status);
   return data as unknown as { request: TopupRequest; message: string };
 }
 
 export async function myTopups(): Promise<TopupRequest[]> {
   const res = await fetch(`${API_BASE}/api/billing/topup/mine`, { headers: headers() });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError('Не удалось загрузить заявки', res.status);
+  if (!res.ok) throw new ApiError('Failed to load requests', res.status);
   return (data.items as TopupRequest[]) ?? [];
 }
 
@@ -207,7 +207,7 @@ export async function myTopups(): Promise<TopupRequest[]> {
 export async function adminListUsers(): Promise<PublicUser[]> {
   const res = await fetch(`${API_BASE}/api/admin/users`, { headers: headers() });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError('Нет доступа', res.status);
+  if (!res.ok) throw new ApiError('Access denied', res.status);
   return (data.users as PublicUser[]) ?? [];
 }
 
@@ -218,7 +218,7 @@ export async function adminCreditUser(id: string, tokens: number): Promise<Publi
     body: JSON.stringify({ tokens }),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Error', res.status);
   return data.user as PublicUser;
 }
 
@@ -229,14 +229,14 @@ export async function adminSetRole(id: string, role: UserRole): Promise<PublicUs
     body: JSON.stringify({ role }),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Error', res.status);
   return data.user as PublicUser;
 }
 
 export async function adminListTopups(): Promise<TopupRequest[]> {
   const res = await fetch(`${API_BASE}/api/admin/topups`, { headers: headers() });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError('Нет доступа', res.status);
+  if (!res.ok) throw new ApiError('Access denied', res.status);
   return (data.items as TopupRequest[]) ?? [];
 }
 
@@ -246,7 +246,7 @@ export async function adminFulfillTopup(id: string): Promise<TopupRequest> {
     headers: headers(),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Error', res.status);
   return data.item as TopupRequest;
 }
 
@@ -254,7 +254,7 @@ export async function adminFulfillTopup(id: string): Promise<TopupRequest> {
 export async function getAnalyticsInsight(): Promise<AnalyticsResult> {
   const res = await fetch(`${API_BASE}/api/analytics/insight`, { method: 'POST', headers: headers() });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Не удалось получить аналитику', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Failed to load analytics', res.status);
   return data as unknown as AnalyticsResult;
 }
 
@@ -262,14 +262,14 @@ export async function getAnalyticsInsight(): Promise<AnalyticsResult> {
 export async function getModels(): Promise<AvailableModels> {
   const res = await fetch(`${API_BASE}/api/models`);
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError('Не удалось загрузить модели', res.status);
+  if (!res.ok) throw new ApiError('Failed to load models', res.status);
   return data as unknown as AvailableModels;
 }
 
 export async function adminListModels(): Promise<AiModelInfo[]> {
   const res = await fetch(`${API_BASE}/api/admin/models`, { headers: headers() });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError('Нет доступа', res.status);
+  if (!res.ok) throw new ApiError('Access denied', res.status);
   return (data.models as AiModelInfo[]) ?? [];
 }
 
@@ -287,7 +287,7 @@ export async function adminCreateModel(input: {
     body: JSON.stringify(input),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Error', res.status);
   return data.model as AiModelInfo;
 }
 
@@ -301,7 +301,7 @@ export async function adminUpdateModel(
     body: JSON.stringify(patch),
   });
   const data = await parseJson(res);
-  if (!res.ok) throw new ApiError((data.message as string) || 'Ошибка', res.status);
+  if (!res.ok) throw new ApiError((data.message as string) || 'Error', res.status);
   return data.model as AiModelInfo;
 }
 
@@ -309,6 +309,6 @@ export async function adminDeleteModel(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/admin/models/${id}`, { method: 'DELETE', headers: headers() });
   if (!res.ok && res.status !== 204) {
     const data = await parseJson(res);
-    throw new ApiError((data.message as string) || 'Ошибка', res.status);
+    throw new ApiError((data.message as string) || 'Error', res.status);
   }
 }

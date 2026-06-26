@@ -32,16 +32,16 @@ export function createApp() {
   app.use('/api/billing', billingRouter);
   app.use('/api/admin', adminRouter);
 
-  // Прод (один сервис): отдаём собранный фронт с SPA-фоллбэком при SERVE_WEB=true.
+  // Prod (single service): serve the built frontend with SPA fallback when SERVE_WEB=true.
   if (config.serveWeb) {
     const dir = path.dirname(fileURLToPath(import.meta.url));
     const webDist = path.resolve(dir, '../../web/dist');
     if (fs.existsSync(webDist)) {
       app.use(express.static(webDist));
-      // Любой не-API путь → index.html (клиентский роутинг)
+      // Any non-API path → index.html (client-side routing)
       app.get(/^(?!\/api).*/, (_req, res) => res.sendFile(path.join(webDist, 'index.html')));
     } else {
-      console.warn('[web] SERVE_WEB=true, но apps/web/dist не найден — соберите фронт (pnpm build).');
+      console.warn('[web] SERVE_WEB=true but apps/web/dist was not found — build the frontend (pnpm build).');
     }
   } else {
     app.get('/', (_req, res) => res.json({ name: 'ai-image api', health: '/api/health' }));

@@ -9,20 +9,20 @@ import {
 } from '@ai-image/shared';
 import { config } from '../config.js';
 
-const SYSTEM_PROMPT = `Ты — ассистент для ОБРАЗОВАТЕЛЬНОГО анализа скриншотов трейдинговых графиков.
-По картинке опиши, что видно (тренд, свечи, объём, скользящие средние, уровни поддержки/сопротивления),
-и сформулируй гипотезу краткосрочного направления. Это не финансовый совет.
+const SYSTEM_PROMPT = `You are an assistant for the EDUCATIONAL analysis of trading chart screenshots.
+Describe what is visible (trend, candles, volume, moving averages, support/resistance levels)
+and state a short-term directional hypothesis. This is not financial advice.
 
-Верни СТРОГО один JSON-объект и больше ничего (без markdown, без текста вокруг):
+Return STRICTLY one JSON object and nothing else (no markdown, no surrounding text):
 {
-  "pair": string,            // тикер/валютная пара с графика, напр. "GBP/USD"; если не видно — "UNKNOWN"
+  "pair": string,            // ticker/currency pair from the chart, e.g. "GBP/USD"; "UNKNOWN" if not visible
   "direction": "UP" | "DOWN" | "NEUTRAL",
-  "timeframe": string,       // таймфрейм/экспирация, напр. "3 minutes" или "1m"
-  "confidence": number,      // целое 0..100 — субъективная уверенность по картинке
-  "description": string,     // 2-5 предложений на русском: что видно на графике и почему такая гипотеза
-  "signals": string[]        // 2-5 коротких тезисов (тренд, объём, уровни, MA)
+  "timeframe": string,       // timeframe/expiry, e.g. "3 minutes" or "1m"
+  "confidence": number,      // integer 0..100 — subjective confidence based on the image
+  "description": string,     // 2-5 sentences in English: what is on the chart and why this hypothesis
+  "signals": string[]        // 2-5 short bullet points (trend, volume, levels, MA)
 }
-Не выдумывай гарантий и не обещай прибыль.`;
+Do not invent guarantees and do not promise profit.`;
 
 export interface AnalyzeParams {
   imageDataUrl: string;
@@ -52,9 +52,9 @@ export class OpenRouterError extends Error {
  */
 export async function analyzeWithOpenRouter(params: AnalyzeParams): Promise<AnalysisModelOutput> {
   const userText = [
-    'Проанализируй этот скриншот графика.',
-    params.pairHint ? `Подсказка по паре: ${params.pairHint}.` : '',
-    params.timeframeHint ? `Таймфрейм/экспирация: ${params.timeframeHint}.` : '',
+    'Analyze this chart screenshot.',
+    params.pairHint ? `Pair hint: ${params.pairHint}.` : '',
+    params.timeframeHint ? `Timeframe/expiry: ${params.timeframeHint}.` : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -127,10 +127,10 @@ export function mockAnalysis(params: { pairHint?: string; timeframeHint?: string
     timeframe: params.timeframeHint || '3 minutes',
     confidence: 50 + Math.floor(Math.random() * 35),
     description:
-      'Демо-режим (ключ OpenRouter не задан). Это сгенерированный пример ответа в нужном формате: ' +
-      'на графике видна серия свечей, краткосрочная скользящая средняя направлена в сторону сигнала, ' +
-      'объём умеренный. В реальном режиме здесь будет разбор от vision-модели.',
-    signals: ['Краткосрочный тренд', 'Рядом уровень поддержки/сопротивления', 'Объём умеренный'],
+      'Demo mode (no OpenRouter key set). This is a generated example in the required format: ' +
+      'the chart shows a series of candles, the short-term moving average points toward the signal, ' +
+      'and volume is moderate. In live mode a vision model would provide the analysis here.',
+    signals: ['Short-term trend', 'Support/resistance nearby', 'Moderate volume'],
   };
 }
 
@@ -172,19 +172,19 @@ export async function analyzeTrades(params: {
     params.byInstrument
       .map(
         (s) =>
-          `${s.pair}: входов ${s.entered}, W/L ${s.wins}/${s.losses}, винрейт ${s.winrate ?? '—'}%, payout ${s.payout.toFixed(2)}`,
+          `${s.pair}: entries ${s.entered}, W/L ${s.wins}/${s.losses}, win rate ${s.winrate ?? '—'}%, payout ${s.payout.toFixed(2)}`,
       )
-      .join('\n') || '(пока нет сделок)';
+      .join('\n') || '(no trades yet)';
 
   const system =
-    'Ты — образовательный ассистент по дисциплине трейдинга. Кратко разбери статистику пользователя ' +
-    'и порекомендуй инструменты ТОЛЬКО из списка кандидатов. Подчёркивай, что винрейт не гарантирован, ' +
-    'а ИИ не предсказывает рынок. Верни строго JSON: ' +
-    '{"insight": string (3-5 предложений по-русски), "recommendations": string[] (2-4 тикера из списка кандидатов)}.';
+    'You are an educational trading-discipline assistant. Briefly review the user’s statistics ' +
+    'and recommend instruments ONLY from the candidates list. Emphasize that the win rate is not ' +
+    'guaranteed and that AI does not predict the market. Return strictly JSON: ' +
+    '{"insight": string (3-5 sentences in English), "recommendations": string[] (2-4 tickers from the candidates list)}.';
   const user =
-    `Статистика по инструментам:\n${table}\n\n` +
-    `Общий винрейт: ${params.stats.winrate ?? '—'}% (входов ${params.stats.entered}, всего анализов ${params.stats.total}).\n\n` +
-    `Кандидаты для рекомендаций: ${candidates.join(', ') || '(нет)'}.`;
+    `Per-instrument stats:\n${table}\n\n` +
+    `Overall win rate: ${params.stats.winrate ?? '—'}% (entries ${params.stats.entered}, total analyses ${params.stats.total}).\n\n` +
+    `Candidates for recommendations: ${candidates.join(', ') || '(none)'}.`;
 
   const parsed = await chatJson(system, user, params.model);
   return AnalyticsInsightSchema.parse(parsed);
@@ -204,15 +204,15 @@ export function mockTradeInsight(params: {
   const parts: string[] = [];
   if (params.stats.entered === 0) {
     parts.push(
-      'Пока недостаточно отмеченных сделок для разбора. Отмечай исходы (зашёл / win / loss / payout) — и здесь появится статистика.',
+      'Not enough marked trades yet for a review. Mark outcomes (entered / win / loss / payout) and stats will appear here.',
     );
   } else {
-    parts.push(`Всего входов: ${params.stats.entered}, общий винрейт около ${params.stats.winrate ?? '—'}%.`);
+    parts.push(`Total entries: ${params.stats.entered}, overall win rate around ${params.stats.winrate ?? '—'}%.`);
     if (best && worst && best.pair !== worst.pair) {
-      parts.push(`Относительно лучше шло по ${best.pair} (${best.winrate}%), хуже — по ${worst.pair} (${worst.winrate}%).`);
+      parts.push(`Relatively better on ${best.pair} (${best.winrate}%), worse on ${worst.pair} (${worst.winrate}%).`);
     }
     parts.push(
-      'Важно: на малой выборке разница между инструментами — в основном шум. Устойчивого предсказательного преимущества у ИИ-разметки нет — это ключевой вывод работы.',
+      'Important: on a small sample, differences between instruments are mostly noise. AI labeling has no stable predictive edge — this is the key conclusion of the project.',
     );
   }
   return { insight: parts.join(' '), recommendations: candidates };
@@ -220,7 +220,7 @@ export function mockTradeInsight(params: {
 
 export class AllModelsFailedError extends Error {
   constructor(public attempts: number) {
-    super(`Все ${attempts} модель(и) не ответили`);
+    super(`All ${attempts} model(s) failed`);
     this.name = 'AllModelsFailedError';
   }
 }

@@ -16,7 +16,7 @@ authRouter.post('/register', async (req, res) => {
 
   const existing = await findUserByEmail(email);
   if (existing) {
-    return res.status(409).json({ error: 'email_taken', message: 'Этот email уже зарегистрирован.' });
+    return res.status(409).json({ error: 'email_taken', message: 'This email is already registered.' });
   }
 
   const user = await createUser({ email, passwordHash: await hashPassword(password) });
@@ -33,7 +33,7 @@ authRouter.post('/login', async (req, res) => {
 
   let user = await findUserByEmail(email);
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    return res.status(401).json({ error: 'invalid_credentials', message: 'Неверный email или пароль.' });
+    return res.status(401).json({ error: 'invalid_credentials', message: 'Invalid email or password.' });
   }
 
   // Бутстрап администратора: email из ADMIN_EMAIL автоматически получает роль admin.
@@ -56,6 +56,6 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'invalid_request', details: parse.error.flatten() });
   }
   const updated = await setPreferredModel(req.user!.id, parse.data.preferredModelId);
-  if (!updated) return res.status(404).json({ error: 'not_found', message: 'Пользователь не найден.' });
+  if (!updated) return res.status(404).json({ error: 'not_found', message: 'User not found.' });
   return res.json({ user: toPublicUser(updated) });
 });

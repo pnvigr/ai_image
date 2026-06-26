@@ -42,12 +42,12 @@ analysesRouter.patch('/:id', async (req, res) => {
     return res.status(400).json({ error: 'invalid_request', details: parse.error.flatten() });
   }
   const updated = await updateAnalysisOutcome(req.params.id, req.user!.id, parse.data);
-  if (!updated) return res.status(404).json({ error: 'not_found', message: 'Анализ не найден.' });
+  if (!updated) return res.status(404).json({ error: 'not_found', message: 'Analysis not found.' });
   res.json({ item: toHistoryItem(updated) });
 });
 
 analysesRouter.delete('/:id', async (req, res) => {
   const ok = await deleteAnalysis(req.params.id, req.user!.id);
-  if (!ok) return res.status(404).json({ error: 'not_found', message: 'Анализ не найден.' });
+  if (!ok) return res.status(404).json({ error: 'not_found', message: 'Analysis not found.' });
   res.status(204).end();
 });

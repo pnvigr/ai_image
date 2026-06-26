@@ -61,6 +61,6 @@ export function hasOpenRouter(): boolean {
 
 if (!process.env.JWT_SECRET) {
   console.warn(
-    '[config] JWT_SECRET не задан — использую небезопасный дефолт. Задайте JWT_SECRET в .env для продакшена.',
+    '[config] JWT_SECRET is not set — using an insecure default. Set JWT_SECRET in .env for production.',
   );
 }

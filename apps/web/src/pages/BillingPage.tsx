@@ -7,9 +7,9 @@ import { useAuth } from '../auth/AuthContext';
 import { cn } from '../lib/cn';
 
 const STATUS: Record<TopupRequest['status'], { label: string; cls: string; Icon: typeof Clock }> = {
-  pending: { label: 'ожидает', cls: 'text-amber-300', Icon: Clock },
-  fulfilled: { label: 'зачислено', cls: 'text-emerald-300', Icon: CheckCircle2 },
-  rejected: { label: 'отклонено', cls: 'text-rose-300', Icon: XCircle },
+  pending: { label: 'pending', cls: 'text-amber-300', Icon: Clock },
+  fulfilled: { label: 'credited', cls: 'text-emerald-300', Icon: CheckCircle2 },
+  rejected: { label: 'rejected', cls: 'text-rose-300', Icon: XCircle },
 };
 
 export function BillingPage() {
@@ -43,7 +43,7 @@ export function BillingPage() {
       setMessage(r.message);
       setTopups(await myTopups());
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Не удалось создать заявку');
+      setError(e instanceof ApiError ? e.message : 'Failed to create request');
     } finally {
       setBusy(null);
     }
@@ -54,19 +54,19 @@ export function BillingPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Coins className="h-5 w-5 text-emerald-400" />
-          <h2 className="text-lg font-bold tracking-tight">Токены</h2>
+          <h2 className="text-lg font-bold tracking-tight">Tokens</h2>
         </div>
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm">
-          Баланс: <span className="font-bold text-emerald-300">{user.tokensBalance}</span> токенов
+          Balance: <span className="font-bold text-emerald-300">{user.tokensBalance}</span> tokens
         </div>
       </div>
 
       <div className="flex items-start gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-xs text-slate-400">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-indigo-400" />
         <p>
-          Бесплатный тариф ограничен {info?.freeDailyLimit ?? '—'} анализами в день. Платная модель тратит
-          токены ({info?.paidAnalysisCost ?? 1} за анализ). В этом учебном проекте оплата имитируется: после
-          оформления заявки напишите в поддержку — токены начислит администратор.
+          The free tier is limited to {info?.freeDailyLimit ?? '—'} analyses per day. The paid model spends
+          tokens ({info?.paidAnalysisCost ?? 1} per analysis). In this educational project payment is
+          simulated: after placing a request, contact support — an administrator credits the tokens.
         </p>
       </div>
 
@@ -85,7 +85,7 @@ export function BillingPage() {
         {info?.packages.map((pkg) => (
           <div key={pkg.id} className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
             <div className="text-3xl font-bold text-slate-100">{pkg.tokens}</div>
-            <div className="text-xs text-slate-500">токенов{pkg.bonus ? ` · ${pkg.bonus}` : ''}</div>
+            <div className="text-xs text-slate-500">tokens{pkg.bonus ? ` · ${pkg.bonus}` : ''}</div>
             <div className="mt-3 text-lg font-semibold text-emerald-300">{pkg.priceLabel}</div>
             <button
               onClick={() => buy(pkg)}
@@ -96,7 +96,7 @@ export function BillingPage() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <Send className="h-4 w-4" /> Оформить
+                  <Send className="h-4 w-4" /> Order
                 </>
               )}
             </button>
@@ -106,14 +106,14 @@ export function BillingPage() {
 
       {info && (
         <p className="text-center text-sm text-slate-400">
-          Поддержка для зачисления: <span className="font-medium text-slate-200">{info.supportContact}</span>
+          Support for crediting: <span className="font-medium text-slate-200">{info.supportContact}</span>
         </p>
       )}
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-slate-300">Мои заявки</h3>
+        <h3 className="mb-2 text-sm font-semibold text-slate-300">My requests</h3>
         {topups.length === 0 ? (
-          <p className="text-sm text-slate-500">Заявок пока нет.</p>
+          <p className="text-sm text-slate-500">No requests yet.</p>
         ) : (
           <div className="space-y-2">
             {topups.map((t) => {
@@ -124,7 +124,7 @@ export function BillingPage() {
                   className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-2.5 text-sm"
                 >
                   <span className="text-slate-300">
-                    {t.tokens} токенов <span className="text-slate-600">· пакет {t.packageId}</span>
+                    {t.tokens} tokens <span className="text-slate-600">· package {t.packageId}</span>
                   </span>
                   <span className={cn('inline-flex items-center gap-1.5 font-medium', s.cls)}>
                     <s.Icon className="h-4 w-4" /> {s.label}

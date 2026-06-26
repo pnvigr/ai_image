@@ -26,7 +26,7 @@ export function HomePage() {
   const [tier, setTier] = useState<'free' | 'paid'>('free');
   const [paidModelId, setPaidModelId] = useState<string | null>(() => localStorage.getItem('paidModel'));
 
-  // Загружаем доступные модели.
+  // Load available models.
   useEffect(() => {
     getModels()
       .then((m) => {
@@ -36,7 +36,7 @@ export function HomePage() {
       .catch(() => undefined);
   }, []);
 
-  // Выбор платной модели: приоритет — профиль (сервер), затем localStorage, затем первая.
+  // Pick a paid model: profile (server) first, then localStorage, then the first available.
   useEffect(() => {
     if (paidModels.length === 0) return;
     setPaidModelId((prev) => {
@@ -50,7 +50,7 @@ export function HomePage() {
   function choosePaidModel(id: string) {
     setPaidModelId(id);
     localStorage.setItem('paidModel', id);
-    // Если залогинен — запоминаем выбор на сервере (в профиле).
+    // If signed in — remember the choice on the server (profile).
     if (user) void setPreferredModel(id).then(() => refresh()).catch(() => undefined);
   }
 
@@ -66,11 +66,11 @@ export function HomePage() {
     setLastInput(input);
     try {
       setResult(await analyze(input));
-      await refresh(); // обновляем баланс токенов после платного анализа
+      await refresh(); // refresh token balance after a paid analysis
     } catch (e) {
       if (e instanceof ApiError)
         setError({ message: e.message, upgrade: e.upgrade, topup: e.topup, alternatives: e.alternatives });
-      else setError({ message: 'Не удалось связаться с сервером. Запущен ли API?' });
+      else setError({ message: 'Could not reach the server. Is the API running?' });
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export function HomePage() {
                   onClick={() => changeTier('paid')}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:opacity-90"
                 >
-                  <Coins className="h-3.5 w-3.5" /> Перейти на платную модель
+                  <Coins className="h-3.5 w-3.5" /> Switch to a paid model
                 </button>
               )}
 
@@ -120,7 +120,7 @@ export function HomePage() {
                   to="/billing"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:opacity-90"
                 >
-                  <Coins className="h-3.5 w-3.5" /> Пополнить баланс
+                  <Coins className="h-3.5 w-3.5" /> Top up balance
                 </Link>
               )}
 
@@ -153,9 +153,9 @@ function EmptyState() {
       <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-800/80">
         <Sparkles className="h-6 w-6 text-slate-500" />
       </div>
-      <p className="text-sm font-medium text-slate-400">Загрузи скриншот графика — здесь появится разбор</p>
+      <p className="text-sm font-medium text-slate-400">Upload a chart screenshot — the analysis will appear here</p>
       <p className="max-w-xs text-xs text-slate-600">
-        Формат ответа: пара, направление, экспирация, уверенность и описание
+        Response format: pair, direction, expiry, confidence and description
       </p>
     </div>
   );

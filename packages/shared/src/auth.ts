@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 export const RegisterSchema = z.object({
-  email: z.string().email('Некорректный email').max(120),
-  password: z.string().min(6, 'Минимум 6 символов').max(100),
+  email: z.string().email('Invalid email').max(120),
+  password: z.string().min(6, 'At least 6 characters').max(100),
 });
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 
 export const LoginSchema = z.object({
-  email: z.string().email('Некорректный email').max(120),
-  password: z.string().min(1, 'Введите пароль').max(100),
+  email: z.string().email('Invalid email').max(120),
+  password: z.string().min(1, 'Enter your password').max(100),
 });
 export type LoginInput = z.infer<typeof LoginSchema>;
 
