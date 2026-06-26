@@ -33,6 +33,7 @@ export function toPublicUser(user: UserRecord): PublicUser {
     email: user.email,
     role: user.role,
     tokensBalance: user.tokensBalance,
+    preferredModelId: user.preferredModelId ?? null,
     createdAt: user.createdAt,
   };
 }

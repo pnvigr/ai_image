@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Образовательный диплом: как ИИ анализирует скриншоты трейдинговых графиков (NodeJS + MongoDB, монорепо)",
+  "description": "Educational diploma project: how AI analyzes screenshots of trading charts (NodeJS + MongoDB, monorepo)",
   "engines": {
     "node": ">=20"
   },

@@ -7,6 +7,8 @@ const userSchema = new Schema(
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     // Баланс токенов — используется в Фазе 4 (платная модель/перепродажа)
     tokensBalance: { type: Number, default: 0 },
+    // Запомненный выбор платной модели (Фаза 7)
+    preferredModelId: { type: String, default: null },
   },
   { timestamps: true },
 );

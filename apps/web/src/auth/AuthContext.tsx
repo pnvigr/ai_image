@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Восстанавливаем сессию по сохранённому токену.
+  // Restore the session from the saved token.
   useEffect(() => {
     if (!getAuthToken()) {
       setLoading(false);
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  // Перечитать профиль (например, чтобы обновить баланс токенов).
+  // Re-fetch the profile (e.g. to refresh the token balance).
   async function refresh() {
     if (!getAuthToken()) return;
     setUser(await fetchMe());
@@ -64,6 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth должен использоваться внутри <AuthProvider>');
+  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
   return ctx;
 }

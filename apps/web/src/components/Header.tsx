@@ -26,7 +26,7 @@ export function Header() {
           <h1 className="text-lg font-extrabold leading-tight tracking-tight">
             ChartSense <span className="text-emerald-400">AI</span>
           </h1>
-          <p className="text-xs text-slate-400">Образовательный анализ графиков</p>
+          <p className="text-xs text-slate-400">Educational chart analysis</p>
         </div>
       </Link>
 
@@ -50,7 +50,7 @@ export function Header() {
               className={cn('relative inline-flex h-2 w-2 rounded-full', isMock ? 'bg-amber-400' : 'bg-emerald-400')}
             />
           </span>
-          {isMock ? 'DEMO · mock-режим' : `LIVE · ${health?.model ?? 'model'}`}
+          {isMock ? 'DEMO · mock mode' : `LIVE · ${health?.model ?? 'model'}`}
         </div>
 
         {user ? (
@@ -58,7 +58,7 @@ export function Header() {
             <Link
               to="/billing"
               className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/20"
-              title="Баланс токенов"
+              title="Token balance"
             >
               <Coins className="h-4 w-4" /> {user.tokensBalance}
             </Link>
@@ -66,20 +66,20 @@ export function Header() {
               to="/history"
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
-              <HistoryIcon className="h-4 w-4" /> История
+              <HistoryIcon className="h-4 w-4" /> History
             </Link>
             <Link
               to="/analytics"
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
-              <BarChart3 className="h-4 w-4" /> Аналитика
+              <BarChart3 className="h-4 w-4" /> Analytics
             </Link>
             {user.role === 'admin' && (
               <Link
                 to="/admin"
                 className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-indigo-300 transition hover:bg-slate-800"
               >
-                <Shield className="h-4 w-4" /> Админка
+                <Shield className="h-4 w-4" /> Admin
               </Link>
             )}
             <span className="hidden max-w-[10rem] truncate text-sm text-slate-300 sm:inline">{user.email}</span>
@@ -90,7 +90,7 @@ export function Header() {
               }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
-              <LogOut className="h-3.5 w-3.5" /> Выйти
+              <LogOut className="h-3.5 w-3.5" /> Sign out
             </button>
           </div>
         ) : (
@@ -99,13 +99,13 @@ export function Header() {
               to="/login"
               className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:text-white"
             >
-              Вход
+              Sign in
             </Link>
             <Link
               to="/register"
               className="rounded-lg bg-gradient-to-r from-emerald-400 to-indigo-500 px-3 py-1.5 text-sm font-semibold text-slate-950 transition hover:opacity-90"
             >
-              Регистрация
+              Sign up
             </Link>
           </div>
         )}

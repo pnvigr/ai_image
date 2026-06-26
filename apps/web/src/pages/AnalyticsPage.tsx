@@ -45,7 +45,7 @@ export function AnalyticsPage() {
     try {
       setInsight(await getAnalyticsInsight());
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Не удалось получить разбор');
+      setError(e instanceof ApiError ? e.message : 'Failed to get the review');
     } finally {
       setInsightLoading(false);
     }
@@ -55,15 +55,15 @@ export function AnalyticsPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <BarChart3 className="h-5 w-5 text-emerald-400" />
-        <h2 className="text-lg font-bold tracking-tight">Аналитика сделок</h2>
+        <h2 className="text-lg font-bold tracking-tight">Trade analytics</h2>
       </div>
 
-      {/* Сводка */}
+      {/* Summary */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Всего анализов" value={String(stats.total)} />
-        <StatCard label="Заходов" value={String(stats.entered)} hint={`${stats.wins}W / ${stats.losses}L`} />
+        <StatCard label="Total analyses" value={String(stats.total)} />
+        <StatCard label="Entries" value={String(stats.entered)} hint={`${stats.wins}W / ${stats.losses}L`} />
         <StatCard
-          label="Винрейт"
+          label="Win rate"
           value={stats.winrate === null ? '—' : `${stats.winrate}%`}
           accent={
             stats.winrate === null ? 'text-slate-300' : stats.winrate >= 50 ? 'text-emerald-400' : 'text-rose-400'
@@ -78,13 +78,13 @@ export function AnalyticsPage() {
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-10 text-center text-slate-400">
-          Нет данных. Сделай анализы на главной и отметь исходы в истории.
+          No data. Run analyses on the home page and mark outcomes in history.
         </div>
       ) : (
         <>
-          {/* Разбивка по инструментам */}
+          {/* By instrument */}
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">По инструментам</h3>
+            <h3 className="mb-2 text-sm font-semibold text-slate-300">By instrument</h3>
             <div className="space-y-2">
               {byInstrument.map((s) => (
                 <div
@@ -92,8 +92,8 @@ export function AnalyticsPage() {
                   className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm"
                 >
                   <span className="w-20 font-semibold text-slate-100">{s.pair}</span>
-                  <span className="text-xs text-slate-500">анализов {s.total}</span>
-                  <span className="text-xs text-slate-500">входов {s.entered}</span>
+                  <span className="text-xs text-slate-500">{s.total} analyses</span>
+                  <span className="text-xs text-slate-500">{s.entered} entries</span>
                   <span className="text-xs text-slate-500">
                     {s.wins}W / {s.losses}L
                   </span>
@@ -125,18 +125,18 @@ export function AnalyticsPage() {
             </div>
           </div>
 
-          {/* ИИ-разбор */}
+          {/* AI review */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-300">
-                <Sparkles className="h-4 w-4 text-emerald-400" /> Разбор от ИИ
+                <Sparkles className="h-4 w-4 text-emerald-400" /> AI review
               </h3>
               <button
                 onClick={loadInsight}
                 disabled={insightLoading}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-400 to-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:opacity-90 disabled:opacity-60"
               >
-                {insightLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Получить разбор'}
+                {insightLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Get review'}
               </button>
             </div>
 
@@ -153,7 +153,7 @@ export function AnalyticsPage() {
                 {insight.recommendations.length > 0 && (
                   <div>
                     <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-400">
-                      <Lightbulb className="h-3.5 w-3.5 text-amber-400" /> Попробовать также:
+                      <Lightbulb className="h-3.5 w-3.5 text-amber-400" /> Also try:
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {insight.recommendations.map((r) => (
@@ -169,13 +169,13 @@ export function AnalyticsPage() {
                 )}
                 {insight.degraded && (
                   <p className="text-xs text-slate-500">
-                    (ИИ-провайдер недоступен — показан разбор по локальной статистике.)
+                    (AI provider unavailable — showing a review based on local statistics.)
                   </p>
                 )}
               </div>
             ) : (
               <p className="text-sm text-slate-500">
-                Нажми «Получить разбор», чтобы ИИ проанализировал твои инструменты и предложил другие из списка.
+                Click “Get review” to let AI analyze your instruments and suggest others from the list.
               </p>
             )}
           </div>
@@ -185,8 +185,8 @@ export function AnalyticsPage() {
       <div className="flex items-start gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-xs text-slate-400">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
         <p>
-          Рекомендации носят образовательный характер. Различия винрейта между инструментами на малой выборке
-          статистически незначимы — это часть вывода работы о том, что ИИ не даёт предсказательного преимущества.
+          Recommendations are educational. Win-rate differences between instruments on a small sample are
+          statistically insignificant — part of the project’s conclusion that AI provides no predictive edge.
         </p>
       </div>
     </div>

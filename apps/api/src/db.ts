@@ -14,16 +14,16 @@ export function isDbConnected(): boolean {
  */
 export async function connectDb(): Promise<boolean> {
   if (!config.mongoUri) {
-    console.warn('[db] MONGODB_URI не задан — работаю без сохранения (история отключена).');
+    console.warn('[db] MONGODB_URI is not set — running without persistence (history disabled).');
     return false;
   }
   try {
     await mongoose.connect(config.mongoUri);
     connected = true;
-    console.log('[db] подключено к MongoDB');
+    console.log('[db] connected to MongoDB');
     return true;
   } catch (err) {
-    console.error('[db] не удалось подключиться:', (err as Error).message);
+    console.error('[db] connection failed:', (err as Error).message);
     return false;
   }
 }

@@ -10,6 +10,7 @@ export interface UserRecord {
   passwordHash: string;
   role: UserRole;
   tokensBalance: number;
+  preferredModelId?: string | null;
   createdAt?: string;
 }
 
@@ -26,6 +27,7 @@ function toRecord(doc: Record<string, unknown>): UserRecord {
     passwordHash: String(doc.passwordHash),
     role: doc.role as UserRole,
     tokensBalance: (doc.tokensBalance as number) ?? 0,
+    preferredModelId: (doc.preferredModelId as string | null) ?? null,
     createdAt: createdAt instanceof Date ? createdAt.toISOString() : (createdAt as string | undefined),
   };
 }
@@ -70,6 +72,7 @@ export async function createUser(input: {
     passwordHash: input.passwordHash,
     role,
     tokensBalance: 0,
+    preferredModelId: null,
     createdAt: new Date().toISOString(),
   };
   memByEmail.set(email, record);
@@ -103,6 +106,22 @@ export async function setUserRole(userId: string, role: UserRole): Promise<UserR
   for (const user of memByEmail.values()) {
     if (user.id === userId) {
       user.role = role;
+      return user;
+    }
+  }
+  return null;
+}
+
+export async function setPreferredModel(userId: string, modelId: string | null): Promise<UserRecord | null> {
+  if (isDbConnected()) {
+    const doc = await UserModel.findByIdAndUpdate(userId, { $set: { preferredModelId: modelId } }, { new: true })
+      .lean()
+      .catch(() => null);
+    return doc ? toRecord(doc as Record<string, unknown>) : null;
+  }
+  for (const user of memByEmail.values()) {
+    if (user.id === userId) {
+      user.preferredModelId = modelId;
       return user;
     }
   }

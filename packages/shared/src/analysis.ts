@@ -40,11 +40,13 @@ export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
 export const AnalyzeRequestSchema = z.object({
   imageDataUrl: z
     .string()
-    .startsWith('data:image/', 'Ожидается data URL картинки (data:image/...)')
-    .max(20_000_000, 'Картинка слишком большая (макс. ~15 МБ)'),
+    .startsWith('data:image/', 'Expected an image data URL (data:image/...)')
+    .max(20_000_000, 'Image is too large (max ~15 MB)'),
   pairHint: z.string().max(40).optional(),
   timeframeHint: z.string().max(40).optional(),
   tier: z.enum(['free', 'paid']).default('free'),
+  // Для платной модели — выбранный пользователем OpenRouter model id (опционально).
+  modelId: z.string().max(120).optional(),
 });
 export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
 
@@ -53,6 +55,6 @@ export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
  * Сервер всегда добавляет его в ответ, фронт показывает на видном месте.
  */
 export const ANALYSIS_DISCLAIMER =
-  'Это не финансовая рекомендация. ИИ не предсказывает движение рынка — ' +
-  'анализ носит образовательный характер и не гарантирует результат. ' +
-  'Реальный винрейт определяется рынком и условиями платформы, а не «силой» модели.';
+  'This is not financial advice. AI does not predict market movements — the analysis is ' +
+  'educational and does not guarantee any result. The real win rate is determined by the market ' +
+  'and the platform’s conditions, not by the “power” of the model.';

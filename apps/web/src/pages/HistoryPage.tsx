@@ -35,7 +35,7 @@ export function HistoryPage() {
     if (!user) return;
     listAnalyses()
       .then(setItems)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Не удалось загрузить историю'))
+      .catch((e) => setError(e instanceof ApiError ? e.message : 'Failed to load history'))
       .finally(() => setLoading(false));
   }, [user]);
 
@@ -58,15 +58,15 @@ export function HistoryPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <HistoryIcon className="h-5 w-5 text-emerald-400" />
-        <h2 className="text-lg font-bold tracking-tight">История анализов</h2>
+        <h2 className="text-lg font-bold tracking-tight">Analysis history</h2>
       </div>
 
-      {/* Винрейт-сводка — центральный элемент научной части */}
+      {/* Win-rate summary — the centerpiece of the research part */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Всего анализов" value={String(stats.total)} />
-        <StatCard label="Заходов" value={`${stats.entered}`} hint={`${stats.wins}W / ${stats.losses}L`} />
+        <StatCard label="Total analyses" value={String(stats.total)} />
+        <StatCard label="Entries" value={`${stats.entered}`} hint={`${stats.wins}W / ${stats.losses}L`} />
         <StatCard
-          label="Винрейт"
+          label="Win rate"
           value={stats.winrate === null ? '—' : `${stats.winrate}%`}
           accent={
             stats.winrate === null ? 'text-slate-300' : stats.winrate >= 50 ? 'text-emerald-400' : 'text-rose-400'
@@ -78,9 +78,9 @@ export function HistoryPage() {
       <div className="flex items-start gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-xs text-slate-400">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
         <p>
-          Винрейт считается среди сделок с известным исходом. На небольшой выборке он закономерно колеблется
-          около случайного уровня — это и есть эмпирическая иллюстрация тезиса: ИИ не даёт устойчивого
-          предсказательного преимущества.
+          Win rate is computed over trades with a known outcome. On a small sample it naturally fluctuates
+          around a random level — this is the empirical illustration of the thesis: AI provides no stable
+          predictive edge.
         </p>
       </div>
 
@@ -96,12 +96,18 @@ export function HistoryPage() {
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-10 text-center text-slate-400">
-          Пока нет анализов. Сделай первый на главной странице — он появится здесь.
+          No analyses yet. Run your first one on the home page — it will appear here.
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <HistoryRow key={item.id} item={item} onChange={replaceItem} onRemove={(id) => setItems((p) => p.filter((i) => i.id !== id))} onError={setError} />
+            <HistoryRow
+              key={item.id}
+              item={item}
+              onChange={replaceItem}
+              onRemove={(id) => setItems((p) => p.filter((i) => i.id !== id))}
+              onError={setError}
+            />
           ))}
         </div>
       )}
@@ -151,7 +157,7 @@ function HistoryRow({
       onChange(updated);
       setPayout(updated.payout?.toString() ?? '');
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : 'Не удалось сохранить');
+      onError(e instanceof ApiError ? e.message : 'Failed to save');
     } finally {
       setBusy(false);
     }
@@ -163,7 +169,7 @@ function HistoryRow({
       await deleteAnalysis(item.id);
       onRemove(item.id);
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : 'Не удалось удалить');
+      onError(e instanceof ApiError ? e.message : 'Failed to delete');
       setBusy(false);
     }
   }
@@ -177,18 +183,18 @@ function HistoryRow({
         </span>
         <span className="font-semibold text-slate-100">{item.pair}</span>
         <span className="text-xs text-slate-500">{item.timeframe}</span>
-        <span className="text-xs text-slate-500">уверенность {Math.round(item.confidence)}%</span>
+        <span className="text-xs text-slate-500">confidence {Math.round(item.confidence)}%</span>
         {item.mock && (
           <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">DEMO</span>
         )}
         <span className="ml-auto text-xs text-slate-600">
-          {item.createdAt ? new Date(item.createdAt).toLocaleString('ru-RU') : ''}
+          {item.createdAt ? new Date(item.createdAt).toLocaleString('en-US') : ''}
         </span>
         <button
           onClick={remove}
           disabled={busy}
           className="text-slate-600 transition hover:text-rose-400 disabled:opacity-50"
-          aria-label="Удалить"
+          aria-label="Delete"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -196,19 +202,19 @@ function HistoryRow({
 
       <p className="mt-2 line-clamp-2 text-sm text-slate-400">{item.description}</p>
 
-      {/* Ручная отметка исхода */}
+      {/* Manual outcome */}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-800 pt-3">
-        <span className="text-xs font-medium text-slate-400">Заходил?</span>
+        <span className="text-xs font-medium text-slate-400">Entered?</span>
         <Toggle active={item.entered === true} onClick={() => patch({ entered: true })} disabled={busy}>
-          Да
+          Yes
         </Toggle>
         <Toggle active={item.entered === false} onClick={() => patch({ entered: false })} disabled={busy} tone="slate">
-          Нет
+          No
         </Toggle>
 
         {item.entered === true && (
           <>
-            <span className="ml-2 text-xs font-medium text-slate-400">Результат:</span>
+            <span className="ml-2 text-xs font-medium text-slate-400">Result:</span>
             <Toggle active={item.result === 'win'} onClick={() => patch({ result: 'win' as TradeResult })} disabled={busy} tone="green">
               Win
             </Toggle>

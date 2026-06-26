@@ -21,7 +21,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       else await register(email, password);
       navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Что-то пошло не так');
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -36,10 +36,10 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           ) : (
             <UserPlus className="h-5 w-5 text-emerald-400" />
           )}
-          <h2 className="text-lg font-bold tracking-tight">{isLogin ? 'Вход' : 'Регистрация'}</h2>
+          <h2 className="text-lg font-bold tracking-tight">{isLogin ? 'Sign in' : 'Sign up'}</h2>
         </div>
         <p className="mb-5 text-sm text-slate-400">
-          {isLogin ? 'Войдите, чтобы видеть историю анализов.' : 'Создайте аккаунт для сохранения истории.'}
+          {isLogin ? 'Sign in to see your analysis history.' : 'Create an account to save your history.'}
         </p>
 
         {error && (
@@ -62,14 +62,14 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-xs font-medium text-slate-400">Пароль</span>
+            <span className="mb-1.5 block text-xs font-medium text-slate-400">Password</span>
             <input
               type="password"
               required
               minLength={isLogin ? undefined : 6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={isLogin ? 'пароль' : 'минимум 6 символов'}
+              placeholder={isLogin ? 'password' : 'at least 6 characters'}
               className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
             />
           </label>
@@ -78,23 +78,17 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             disabled={loading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isLogin ? (
-              'Войти'
-            ) : (
-              'Зарегистрироваться'
-            )}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isLogin ? 'Sign in' : 'Sign up'}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-slate-400">
-          {isLogin ? 'Нет аккаунта? ' : 'Уже есть аккаунт? '}
+          {isLogin ? 'No account? ' : 'Already have an account? '}
           <Link
             to={isLogin ? '/register' : '/login'}
             className="font-medium text-emerald-400 hover:text-emerald-300"
           >
-            {isLogin ? 'Зарегистрироваться' : 'Войти'}
+            {isLogin ? 'Sign up' : 'Sign in'}
           </Link>
         </p>
       </div>

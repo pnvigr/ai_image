@@ -3,3 +3,4 @@ export * from './auth.js';
 export * from './history.js';
 export * from './billing.js';
 export * from './analytics.js';
+export * from './models.js';

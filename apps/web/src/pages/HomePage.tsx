@@ -1,37 +1,103 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, AlertTriangle, Zap, Coins } from 'lucide-react';
+import { Sparkles, AlertTriangle, Coins, RefreshCw } from 'lucide-react';
+import type { AiModelInfo, AnalysisResult, ModelRef } from '@ai-image/shared';
 import { UploadCard } from '../components/UploadCard';
 import { ForecastCard } from '../components/ForecastCard';
-import { analyze, ApiError, type AnalyzeInput } from '../lib/api';
+import { analyze, getModels, setPreferredModel, ApiError, type AnalyzeInput } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
-import type { AnalysisResult } from '@ai-image/shared';
+
+interface ErrState {
+  message: string;
+  upgrade?: boolean;
+  topup?: boolean;
+  alternatives?: ModelRef[];
+}
 
 export function HomePage() {
-  const { refresh } = useAuth();
+  const { refresh, user } = useAuth();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ message: string; upgrade?: boolean; topup?: boolean } | null>(null);
+  const [error, setError] = useState<ErrState | null>(null);
   const [lastInput, setLastInput] = useState<AnalyzeInput | null>(null);
 
-  async function run(input: AnalyzeInput) {
+  const [paidModels, setPaidModels] = useState<AiModelInfo[]>([]);
+  const [freeCount, setFreeCount] = useState(0);
+  const [tier, setTier] = useState<'free' | 'paid'>('free');
+  const [paidModelId, setPaidModelId] = useState<string | null>(() => localStorage.getItem('paidModel'));
+
+  // Load available models.
+  useEffect(() => {
+    getModels()
+      .then((m) => {
+        setPaidModels(m.paid);
+        setFreeCount(m.free.length);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // Pick a paid model: profile (server) first, then localStorage, then the first available.
+  useEffect(() => {
+    if (paidModels.length === 0) return;
+    setPaidModelId((prev) => {
+      if (prev && paidModels.some((m) => m.modelId === prev)) return prev;
+      const want = user?.preferredModelId || localStorage.getItem('paidModel');
+      if (want && paidModels.some((m) => m.modelId === want)) return want;
+      return paidModels[0]?.modelId ?? null;
+    });
+  }, [user, paidModels]);
+
+  function choosePaidModel(id: string) {
+    setPaidModelId(id);
+    localStorage.setItem('paidModel', id);
+    // If signed in — remember the choice on the server (profile).
+    if (user) void setPreferredModel(id).then(() => refresh()).catch(() => undefined);
+  }
+
+  function changeTier(t: 'free' | 'paid') {
+    setTier(t);
+    setError(null);
+    if (t === 'paid' && !paidModelId && paidModels[0]) choosePaidModel(paidModels[0].modelId);
+  }
+
+  async function runFull(input: AnalyzeInput) {
     setLoading(true);
     setError(null);
     setLastInput(input);
     try {
       setResult(await analyze(input));
-      await refresh(); // обновляем баланс токенов после платного анализа
+      await refresh(); // refresh token balance after a paid analysis
     } catch (e) {
-      if (e instanceof ApiError) setError({ message: e.message, upgrade: e.upgrade, topup: e.topup });
-      else setError({ message: 'Не удалось связаться с сервером. Запущен ли API?' });
+      if (e instanceof ApiError)
+        setError({ message: e.message, upgrade: e.upgrade, topup: e.topup, alternatives: e.alternatives });
+      else setError({ message: 'Could not reach the server. Is the API running?' });
     } finally {
       setLoading(false);
     }
   }
 
+  function run(submit: { imageDataUrl: string; pairHint?: string; timeframeHint?: string }) {
+    void runFull({ ...submit, tier, modelId: tier === 'paid' ? paidModelId ?? undefined : undefined });
+  }
+
+  function retryPaid(modelId: string) {
+    choosePaidModel(modelId);
+    setTier('paid');
+    if (lastInput) void runFull({ ...lastInput, tier: 'paid', modelId });
+  }
+
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      <UploadCard onAnalyze={run} loading={loading} />
+      <UploadCard
+        onAnalyze={run}
+        loading={loading}
+        tier={tier}
+        onTierChange={changeTier}
+        freeCount={freeCount}
+        paidModels={paidModels}
+        paidModelId={paidModelId}
+        onPaidModelChange={choosePaidModel}
+      />
 
       <div className="flex flex-col gap-4">
         {error && (
@@ -39,21 +105,37 @@ export function HomePage() {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
             <div className="space-y-2">
               <p>{error.message}</p>
-              {error.upgrade && lastInput && (
+
+              {error.upgrade && (
                 <button
-                  onClick={() => run({ ...lastInput, tier: 'paid' })}
+                  onClick={() => changeTier('paid')}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:opacity-90"
                 >
-                  <Zap className="h-3.5 w-3.5" /> Использовать платную модель
+                  <Coins className="h-3.5 w-3.5" /> Switch to a paid model
                 </button>
               )}
+
               {error.topup && (
                 <Link
                   to="/billing"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:opacity-90"
                 >
-                  <Coins className="h-3.5 w-3.5" /> Пополнить баланс
+                  <Coins className="h-3.5 w-3.5" /> Top up balance
                 </Link>
+              )}
+
+              {error.alternatives && error.alternatives.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {error.alternatives.map((alt) => (
+                    <button
+                      key={alt.modelId}
+                      onClick={() => retryPaid(alt.modelId)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-700"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" /> {alt.label}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -71,9 +153,9 @@ function EmptyState() {
       <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-800/80">
         <Sparkles className="h-6 w-6 text-slate-500" />
       </div>
-      <p className="text-sm font-medium text-slate-400">Загрузи скриншот графика — здесь появится разбор</p>
+      <p className="text-sm font-medium text-slate-400">Upload a chart screenshot — the analysis will appear here</p>
       <p className="max-w-xs text-xs text-slate-600">
-        Формат ответа: пара, направление, экспирация, уверенность и описание
+        Response format: pair, direction, expiry, confidence and description
       </p>
     </div>
   );

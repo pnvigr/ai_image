@@ -11,7 +11,7 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="mt-2 border-t border-slate-800/60 pt-4 text-center text-xs text-slate-600">
-        ChartSense AI · дипломный проект · образовательная демонстрация. ИИ не предсказывает рынок.
+        ChartSense AI · diploma project · educational demo. AI does not predict the market.
       </footer>
     </div>
   );
